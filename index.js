@@ -4,72 +4,120 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { MongoStore } = require('wwebjs-mongo');
 const qrcode = require('qrcode-terminal');
+const moment = require('moment-timezone');
 
-const configModule = require('./config.js');
-const handlerModule = require('./handler.js');
+// ==========================================
+// 1. CONFIGURATION & DATABASE DEFINITIONS
+// ==========================================
+const SUPER_ADMIN = '919310314801@c.us'; 
+const TARGET_PHONE_NUMBER = '918800952400'; 
+const BOT_IMAGE_URL = 'https://githubusercontent.com';
 
-const MONGO_URI = configModule.MONGO_URI;
-const TELEGRAM_TOKEN = configModule.TELEGRAM_TOKEN;
-const Reminder = configModule.Reminder;
+const MONGO_URI = 'mongodb+srv://sahilsignunoffical_db_user:ibmAj5hxtrz6vNmQ@cluster0.ohhvv7y.mongodb.net/whatsapp_bot?retryWrites=true&w=majority';
+const TELEGRAM_TOKEN = '8770167093:AAGoBPUTJRD4cFMFnxf4dIFj-3I4a157eBw';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('📦 Connected to MongoDB Shared Cluster.'))
+    .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// Shared memory layer state to safely store active barcode streams
-let currentQrToken = "";
+const GuildFest = mongoose.model('GuildFest', new mongoose.Schema({
+    groupId: { type: String, unique: true, index: true },
+    targetScore: { type: Number, default: 0 } 
+}));
 
-app.get('/', (req, res) => res.send('🚀 Mars_16 Universal Multi-Platform Engine Layer is Online. To sync your WhatsApp profile instantly, visit: /scan'));
+const ShieldTracker = mongoose.model('ShieldTracker', new mongoose.Schema({
+    groupId: { type: String, index: true },
+    userId: { type: String, index: true },
+    userName: String,
+    expiryTime: Date
+}));
 
-// Clean high-definition web page dashboard view route to prevent token time-outs
-app.get('/scan', (req, res) => {
-    if (!currentQrToken) {
-        return res.send(`
-            <div style="text-align:center; margin-top:80px; font-family:sans-serif;">
-                <h2 style="color:#d9534f; font-size:24px;">🔄 Fetching QR Code Matrix...</h2>
-                <p style="color:#666; font-size:16px;">The bot is connecting to WhatsApp web services. This page will automatically refresh.</p>
-                <script>setTimeout(() => { location.reload(); }, 5000);</script>
-            </div>
-        `);
+const GroupConfig = mongoose.model('GroupConfig', new mongoose.Schema({
+    groupId: { type: String, unique: true, index: true },
+    rules: { type: String, default: "No rules set yet. Use .setrules to define them." },
+    antiPromo: { type: Boolean, default: false },
+    antiSticker: { type: Boolean, default: false },
+    abuseDetect: { type: Boolean, default: false },
+    mutedUsers: [{ userId: String, mutedUntil: Date }]
+}));
+
+const Strike = mongoose.model('Strike', new mongoose.Schema({
+    groupId: { type: String, index: true },
+    userId: { type: String, index: true },
+    strikes: { type: Number, default: 0 }
+}));
+
+const Reminder = mongoose.model('Reminder', new mongoose.Schema({
+    groupId: { type: String, index: true },
+    setterName: String,
+    targetTime: Date,
+    text: String,
+    isRecurring: { type: Boolean, default: false },
+    tagAllTrigger: { type: Boolean, default: false }
+}));
+
+let configCache = new Map();
+const abuseBlacklist = ['chutiya', 'bhenchod', 'gandu', 'madarchod', 'laundu', 'harami', 'bsdk', 'saala'];
+
+function getGroupCache(groupId) {
+    if (!configCache.has(groupId)) {
+        const fresh = { rules: "No rules set yet.", antiPromo: false, antiSticker: false, abuseDetect: false, mutedUsers: [] };
+        configCache.set(groupId, fresh);
+        GroupConfig.create({ groupId }).catch(() => {});
+        return fresh;
     }
-    res.send(`
-        <div style="text-align:center; margin-top:40px; font-family:sans-serif; background:#f4f7f6; padding:20px;">
-            <h2 style="color:#075e54; font-size:32px; margin-bottom:5px;">🤖 Mars_16 Universal WhatsApp Gateway</h2>
-            <p style="color:#555; font-size:16px; margin-bottom:25px;">Open WhatsApp ➔ Linked Devices ➔ Link a Device, then point your phone camera below:</p>
-            <div style="margin:10px auto; padding:25px; display:inline-block; border:3px solid #075e54; border-radius:16px; background:#fff; box-shadow: 0px 10px 25px rgba(0,0,0,0.15);">
-                <img src="https://qrserver.com{encodeURIComponent(currentQrToken)}" alt="WhatsApp Auth QR" style="display:block;" />
-            </div>
-            <p style="color:#888; font-size:13px; margin-top:20px;">✨ Tip: If the code expires or doesn't scan, simply refresh this webpage to pull a fresh token grid.</p>
-            <script>
-                // Auto-refresh the grid token every 45 seconds to keep it perfectly aligned with the engine page
-                setTimeout(() => { location.reload(); }, 45000);
-            </script>
-        </div>
-    `);
-});
-
-function startReminderDaemon(waClient) {
-    setInterval(async () => {
-        try {
-            const now = new Date();
-            const dueReminders = await Reminder.find({ targetTime: { $lte: now } });
-            
-            for (let r of dueReminders) {
-                try {
-                    const chat = await waClient.getChatById(r.groupId);
-                    if (r.tagAllTrigger) {
-                        const readMore = String.fromCharCode(8206).repeat(4000);
-                        let msg = `🚨 *MARS_16 CRITICAL RUN TIME ALERT!* 🚨\n\n📝 *Task Detail:* ${r.text}\n${readMore}\n`;
-                        let mentions = chat.participants.map(p => p.id._serialized);
-                        await chat.sendMessage(msg, { mentions });
-                    } else {
-                        await chat.sendMessage(`⏰ *REMINDER EXECUTED (IST)* ⏰\n\n👤 *Logged By:* ${r.setterName}\n📝 *Context:* ${r.text}`);
-                    }
-                    await Reminder.deleteOne({ _id: r._id });
-                } catch (err) { await Reminder.deleteOne({ _id: r._id }); }
-            }
-        } catch (e) { console.error("Daemon cron process failure:", e); }
-    }, 15000);
+    return configCache.get(groupId);
 }
+
+// ==========================================
+// 2. UNIVERSAL COMMAND HANDLER ENGINE
+// ==========================================
+async function handleIncomingCommand(context, waClient) {
+    const { platform, groupId, senderId, senderName, rawBody, replyContext, kickContext, deleteContext, msgObj, chatObj, isGroupAdmin } = context;
+    if (!rawBody) return;
+    
+    let textMessage = rawBody.trim();
+    const cache = getGroupCache(groupId);
+    const isSuperAdmin = senderId.includes('919310314801');
+
+    if (command === 'help') {
+        const menuText = `🌟 *WELCOME TO Mars_16 ❤️❤️❤️❤️❤️* \n\n🤖 *Group Bot — Commands Map*\n\n*🛠️ Utility*\n├→ *.ping* — Check online status\n├→ *.trans [lang] <text>* — Translate text\n\n*👥 Group Commands*\n├→ *.tagall* — Mass tag all members\n├→ *.tags* — Bus run notification 🎫\n├→ *.tagadmin* — Mention group admins 🛡️\n├→ *.rules* / *.setrules* — Adjust guidelines\n├→ *.mute @member* / *.unmute* (Admins)\n├→ *.kick @member* / *.del* (Admins)\n\n*🛡️ Defense Modules*\n├→ *.shield [duration]* — Activate shield drops countdown (e.g. \`.shield 8h\`)\n\n*🎮 Lords Mobile Features*\n├→ *.hunt [name/number]* — Pull list of 24 monster lineups\n└→ *.formation* — Tactical ratios guide (569, 947, 956)`;
+        return replyContext(menuText);
+    }
+
+    if (command === 'ping') {
+        return replyContext('🚀 Pong! Mars_16 Multi-Platform Engine is fully operational.');
+    }
+
+    if (command === 'formation') {
+        return replyContext(`⚔️ *MARS_16 FORMATION DIRECTIVE GUIDE* ⚔️\n\n• *Tactical Lineups (569 / 947 / 956)*:\n  ├→ Optimal configurations to break fronts.\n  ├→ Deployment Ratio: *50% T4 & 50% T5* layers.\n  └→ Alternative Balance: *60% T4 down to 40% T5* elements.`);
+    }
+
+    if (command === 'hunt') {
+        const query = args.join(' ').toLowerCase().trim();
+        if (!query) return replyContext(`👾 *Monster Hunting Index* \nType \`.hunt 1\` or \`.hunt frostwing\` to view counter layouts.`);
+
+        const profiles = {
+            '1': '🍖 *BON APPÉTIT*:\n• Physical: Black Crow, Tracker, Scarlet Bolt, Trickster, Demon Slayer',
+            'bon appetit': '🍖 *BON APPÉTIT*:\n• Physical: Black Crow, Tracker, Scarlet Bolt, Trickster, Demon Slayer',
+            '2': '🐬 *ARCTIC FLIPPER*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'arctic flipper': '🐬 *ARCTIC FLIPPER*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '3': '🦅 *BLACKWING*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'blackwing': '🦅 *BLACKWING*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '4': '❄️ *FROSTWING*:\n• Magical: Incinerator, Elementalist, Prima Donna, Bombin Goblin, Sage of Storms',
+            'frostwing': '❄️ *FROSTWING*:\n• Magical: Incinerator, Elementalist, Prima Donna, Bombin Goblin, Sage of Storms',
+            '5': '👹 *GARGANTUA*:\n• Magical: Incinerator, Elementalist, Prima Donna, Bombin Goblin, Sage of Storms',
+            'gargantua': '👹 *GARGANTUA*:\n• Magical: Incinerator, Elementalist, Prima Donna, Bombin Goblin, Sage of Storms'
+        };
+        return replyContext(profiles[query] || "❌ Monster index name not found.");
+    }
+}
+
+// ==========================================
+// 3. SERVER & PLATFORM BOOTSTRAP INITIALIZER
+// ==========================================
+const app = express();
+app.get('/', (req, res) => res.send('Mars_16 Engine Layer Active.'));
 
 function initializePlatforms() {
     const store = new MongoStore({ mongoose: mongoose });
@@ -78,53 +126,41 @@ function initializePlatforms() {
         puppeteer: {
             headless: true,
             executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--disable-extensions',
-                '--no-first-run'
-            ]
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
         }
     });
 
-    waClient.on('qr', (qr) => {
-        currentQrToken = qr; // Instantly serves the token block out to our visual link view
-        console.log("📝 A NEW HIGH-RES QR CODE IS READY. Open your webpage to scan it.");
-        qrcode.generate(qr, { small: true });
+    waClient.on('qr', async (qr) => {
+        console.log("⚠️ Requesting phone pairing setup string...");
+        setTimeout(async () => {
+            try {
+                const pairingCode = await waClient.requestPairingCode(TARGET_PHONE_NUMBER);
+                console.log("\n=======================================================");
+                console.log(`🔢 YOUR WHATSAPP PAIRING CODE IS:  ${pairingCode}  🔢`);
+                console.log("=======================================================\n");
+            } catch (err) { console.error(err); }
+        }, 6000);
     });
 
-    waClient.on('ready', () => { 
-        currentQrToken = ""; // Destroys the tracking state once paired to prevent duplicate renders
-        console.log('🚀 WhatsApp Engine actively authenticated and connected.');
-        startReminderDaemon(waClient);
-    });
+    waClient.on('ready', () => console.log('🚀 WhatsApp Connected successfully.'));
 
     waClient.on('message', async (msg) => {
         const chat = await msg.getChat();
-        let isAdmin = false;
-        if (chat.isGroup) {
-            const userObj = chat.participants.find(p => p.id._serialized === (msg.author || msg.from));
-            isAdmin = userObj ? (userObj.isAdmin || userObj.isSuperAdmin) : false;
-        }
-        
         const context = {
             platform: 'whatsapp', groupId: chat.id._serialized, senderId: msg.author || msg.from,
             senderName: msg._data?.notifyName || 'User', rawBody: msg.body,
             replyContext: async (t) => await msg.reply(t),
             kickContext: async (u) => { if (chat.isGroup) await chat.removeParticipants([u]); },
             deleteContext: async () => { if (msg.delete) await msg.delete(true); },
-            msgObj: msg, chatObj: chat, isGroupAdmin: isAdmin
+            msgObj: msg, chatObj: chat, isGroupAdmin: true
         };
-        await handlerModule.handleIncomingCommand(context, waClient);
+        await handleIncomingCommand(context, waClient);
     });
 
     waClient.initialize();
 
-    const tgTokenActual = process.env.TELEGRAM_TOKEN || TELEGRAM_TOKEN;
-    if (tgTokenActual) {
-        const tgBot = new TelegramBot(tgTokenActual);
+    if (TELEGRAM_TOKEN) {
+        const tgBot = new TelegramBot(TELEGRAM_TOKEN);
         tgBot.on('message', async (ctx) => {
             if (!ctx.message || !ctx.message.text) return;
             const context = {
@@ -135,11 +171,11 @@ function initializePlatforms() {
                 deleteContext: async () => { await ctx.deleteMessage().catch(() => {}); },
                 msgObj: ctx.message, chatObj: ctx.chat, isGroupAdmin: true
             };
-            await handlerModule.handleIncomingCommand(context, waClient);
+            await handleIncomingCommand(context, waClient);
         });
         tgBot.launch().then(() => console.log('🚀 Telegram Framework connected and polling.'));
     }
 }
 
 mongoose.connection.once('open', initializePlatforms);
-app.listen(PORT);
+app.listen(process.env.PORT || 3000);
