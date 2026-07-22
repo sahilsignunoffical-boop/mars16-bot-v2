@@ -1,4 +1,4 @@
-const { Strike, Reminder, GuildFest, ShieldTracker, floodTracker, abuseBlacklist, getGroupCache, SUPER_ADMIN } = require('./config');
+const { Strike, Reminder, GuildFest, ShieldTracker, floodTracker, abuseBlacklist, getGroupCache, SUPER_ADMIN } = require('./config.js');
 const { translate } = require('google-translate-api-x');
 const moment = require('moment-timezone');
 
@@ -10,7 +10,7 @@ async function handleStrikeAction(platform, groupId, userId, reason, replyContex
     record.strikes += 1;
     await record.save();
     
-    const cleanUser = userId.split('@')[0];
+    const cleanUser = userId.split('@');
     if (record.strikes >= 3) {
         await replyContext(`🚫 *AUTOMATED BAN EXECUTION*\n\nUser @${cleanUser} has reached *3/3 STRIKES*. Evicting...`);
         await kickContext(userId);
@@ -62,9 +62,10 @@ async function handleIncomingCommand(context, waClient) {
     if (!isTriggered || !commandString) return;
     const args = commandString.split(/ +/);
     const command = args.shift().toLowerCase();
+    // HELP MENU WITH AUTOMATED DP IMAGE ATTACHMENT
     if (command === 'help') {
         const { MessageMedia } = require('whatsapp-web.js');
-        const { BOT_IMAGE_URL } = require('./config');
+        const { BOT_IMAGE_URL } = require('./config.js');
         
         const menuText = `🌟 *WELCOME TO Mars_16 ❤️❤️❤️❤️❤️* \n\n🤖 *Group Bot — Commands*\n\n*🛠️ Utility*\n├→ *.ping* — Check if the bot is online\n└→ *.trans [language] <text>* — Translate text (defaults to English)\n\n*👥 Group Commands*\n├→ *.tagall* — Tag all members (Admins only)\n├→ *.tags* — Tag all for a bus run 🎫\n├→ *.tagadmin* — Mention group admins 🛡️\n├→ *.rules* — Show group rules\n├→ *.setrules <text>* — Set group rules (Admins only)\n├→ *.antipromo on/off* — Auto-delete links & stickers (Admins only)\n├→ *.mute @member* — Auto-delete their messages (Admins only)\n├→ *.unmute @member* — Stop auto-delete (Admins only)\n├→ *.kick @member* — Kick member from group (Admins only)\n└→ *.del* — Delete a message (reply to it, Admins only)\n\n*⏰ Reminders & Schedules*\n├→ *.remind 10m Task* — Alert for 10 mins\n├→ *.remind today 5pm Task* — Reminder later today\n├→ *.remind tomorrow 9am Task* — Reminder tomorrow\n├→ *.remind everyday 9am Alert* — Daily recurring reminder\n├→ *.remind 23/7/26 Task* — Target calendar date tracker\n├→ *.schedule 5:50pm Message* — Daily group schedule\n├→ *.schedulelist* — View all active schedules\n├→ *.remindlist* — View your active tasks\n└→ *.remindcancel <num>* — Cancel task by number\n\n*🛡️ Clan Defense Modules*\n├→ *.shield [duration]* — Activate shield drops countdown (e.g. \`.shield 8h\`)\n├→ *.shieldlist* — Review current structural shield profiles\n├→ *.datime [india/china]* — Global game clocks ⏰\n\n*🎮 Lords Mobile Features*\n├→ *.hunt* — Pull Alphabetical Monster Counter Index Menu\n└→ *.formation* — Tactical ratios guide`;
 
@@ -164,7 +165,7 @@ async function handleIncomingCommand(context, waClient) {
 
     if (command === 'mute') {
         if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin privileges required.");
-        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.;
+        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : (msgObj.mentionedIds && msgObj.mentionedIds[0] ? msgObj.mentionedIds[0] : null);
         if (!target) return replyContext("⚠️ Mention a member or reply to mute them.");
         let hours = parseFloat(args) || 24;
         let until = new Date(Date.now() + hours * 60 * 60 * 1000);
@@ -174,7 +175,7 @@ async function handleIncomingCommand(context, waClient) {
 
     if (command === 'unmute') {
         if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin privileges required.");
-        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.;
+        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : (msgObj.mentionedIds && msgObj.mentionedIds[0] ? msgObj.mentionedIds[0] : null);
         if (!target) return replyContext("⚠️ Mention a member.");
         await GroupConfig.findOneAndUpdate({ groupId }, { $pull: { mutedUsers: { userId: target } } });
         return replyContext(`🔊 Unmuted member successfully.`);
@@ -182,7 +183,7 @@ async function handleIncomingCommand(context, waClient) {
 
     if (command === 'kick') {
         if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin authorization required.");
-        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.;
+        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : (msgObj.mentionedIds && msgObj.mentionedIds[0] ? msgObj.mentionedIds[0] : null);
         if (!target) return replyContext("⚠️ Target a user via mention or reply.");
         if (target.includes('919310314801')) return replyContext("🛡️ That user is immune.");
         await kickContext(target);
@@ -216,7 +217,7 @@ async function handleIncomingCommand(context, waClient) {
     }
 
     if (command === 'hunt') {
-        const submenu = args?.[0]?.toLowerCase();
+        const submenu = args[0] ? args[0].toLowerCase() : null;
         if (!submenu) {
             return replyContext(`👾 *Mars_16 Lords Mobile Hunt Lineups Index* \nUse \`.hunt a\`, \`.hunt f\`, \`.hunt h\`, or \`.hunt n\` to view target sets:\n\n✨ *[a]*: Bon Appétit, Arctic Flipper, Blackwing, Cottageroar\n✨ *[f]*: Frostwing, Gargantua, Gawrilla, Grim Reaper, Gryphon\n✨ *[h]*: Hardrox, Hell Drider, Jade Wyrm, Hootclaw, Mecha Trojan, Mega Maggot\n✨ *[n]*: Necrosis, Noceros, Queen Bee, Saberfang, Serpent Gladiator, Snow Beast, Terrorthorn, Tidal Titan, Voodoo Shaman`);
         }
