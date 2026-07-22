@@ -12,6 +12,7 @@
     "wwebjs-mongo": "^1.1.0",
     "mongoose": "^8.3.0",
     "google-translate-api-x": "^10.1.2",
-    "moment-timezone": "^0.5.45"
+    "moment-timezone": "^0.5.45",
+    "telegraf": "^4.16.3"
   }
 }
