@@ -9,38 +9,14 @@ const configModule = require('./config.js');
 const handlerModule = require('./handler.js');
 
 const MONGO_URI = configModule.MONGO_URI;
+const TARGET_PHONE_NUMBER = configModule.TARGET_PHONE_NUMBER;
 const TELEGRAM_TOKEN = configModule.TELEGRAM_TOKEN;
 const Reminder = configModule.Reminder;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Shared global baseline tracking token memory state
-let currentQrToken = "";
-
-app.get('/', (req, res) => res.send('Mars_16 Multi-Platform Core Engine Active 24/7. Check /scan for your QR code token.'));
-
-// Clean visual web dashboard route for scanning link authentication
-app.get('/scan', (req, res) => {
-    if (!currentQrToken) {
-        return res.send(`
-            <div style="text-align:center; margin-top:50px; font-family:sans-serif;">
-                <h2 style="color:#d9534f;">No QR code available yet.</h2>
-                <p>The bot engine is initializing or already successfully authenticated. Refresh this page in 10-15 seconds.</p>
-            </div>
-        `);
-    }
-    res.send(`
-        <div style="text-align:center; margin-top:50px; font-family:sans-serif;">
-            <h2 style="color:#075e54; font-size:28px;">Scan with WhatsApp Linked Devices:</h2>
-            <p style="color:#555; font-size:16px;">Open WhatsApp -> Linked Devices -> Link a Device, then point your camera below:</p>
-            <div style="margin:30px auto; padding:20px; display:inline-block; border:2px solid #075e54; border-radius:12px; background:#fff; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);">
-                <img src="https://qrserver.com{encodeURIComponent(currentQrToken)}" alt="WhatsApp Authentication QR Code" />
-            </div>
-            <p style="color:#888; font-size:13px; margin-top:15px;">Mars_16 Universal Multi-Platform Engine Layer Sync Pipeline</p>
-        </div>
-    `);
-});
+app.get('/', (req, res) => res.send('Mars_16 Multi-Platform Engine Layer is Online and Stable via Code Pairing Infrastructure.'));
 
 function startReminderDaemon(waClient) {
     setInterval(async () => {
@@ -73,25 +49,42 @@ function initializePlatforms() {
         puppeteer: {
             headless: true,
             executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+            // Added crucial infrastructure lifecycle flags to keep connection alive on Render
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
                 '--disable-gpu',
-                '--disable-extensions'
+                '--disable-extensions',
+                '--no-first-run',
+                '--no-default-browser-check',
+                '--disable-web-security',
+                '--disable-features=IsolateOrigins,site-per-process'
             ]
         }
     });
 
+    // Patched event loop to prevent 'Internal pairing verification error' page drop crashes
     waClient.on('qr', (qr) => {
-        currentQrToken = qr; // Send token to our visual dashboard route link
-        console.log("📝 NEW QR CODE TOKEN LOADED. Visit your App URL path at /scan to view and link your device.");
-        qrcode.generate(qr, { small: true });
+        console.log("⚠️ WA Core state requested auth channel. Delaying pairing execution to secure system stability...");
+        
+        setTimeout(async () => {
+            try {
+                console.log(`📡 Requesting numeric code for phone: +${TARGET_PHONE_NUMBER}...`);
+                const pairingCode = await waClient.requestPairingCode(TARGET_PHONE_NUMBER);
+                
+                console.log("\n=======================================================");
+                console.log(`🔢 YOUR WHATSAPP PAIRING CODE IS:  ${pairingCode}  🔢`);
+                console.log("=======================================================\n");
+                console.log("👉 Open WhatsApp -> Linked Devices -> Link with Phone Number, and enter this 8-character code.");
+            } catch (err) {
+                console.error("❌ Link connection registration sequence drop handled safely. Retrying on next tick...");
+            }
+        }, 8000); // 8-second safety buffer delay ensures clean browser page context mapping
     });
 
     waClient.on('ready', () => { 
-        currentQrToken = ""; // Wipe tracking token state once authenticated safely
-        console.log('🚀 WhatsApp Engine actively authenticated and connected.');
+        console.log('🚀 WhatsApp Connected successfully via device pairing.');
         startReminderDaemon(waClient);
     });
 
