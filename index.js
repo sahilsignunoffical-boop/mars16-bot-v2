@@ -5,9 +5,15 @@ const mongoose = require('mongoose');
 const { MongoStore } = require('wwebjs-mongo');
 const qrcode = require('qrcode-terminal');
 
-const { MONGO_URI, TARGET_PHONE_NUMBER, TELEGRAM_TOKEN, BOT_IMAGE_URL } = require('./config');
-const { handleIncomingCommand } = require('./handler');
-const { Reminder } = require('./config');
+// Explicitly pointing to full file names to resolve internal node lookup modules
+const configModule = require('./config.js');
+const handlerModule = require('./handler.js');
+
+const MONGO_URI = configModule.MONGO_URI;
+const TARGET_PHONE_NUMBER = configModule.TARGET_PHONE_NUMBER;
+const TELEGRAM_TOKEN = configModule.TELEGRAM_TOKEN;
+const BOT_IMAGE_URL = configModule.BOT_IMAGE_URL;
+const Reminder = configModule.Reminder;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -64,12 +70,11 @@ function initializePlatforms() {
         startReminderDaemon(waClient);
     });
 
-    // Welcome Greeting Handler with Profile Image Attachment
     waClient.on('group_join', async (notification) => {
         try {
             const { MessageMedia } = require('whatsapp-web.js');
             const chat = await notification.getChat();
-            const welcomeText = `🌟 *WELCOME TO THE CLAN!* 🌟\n\nHey @${notification.recipientIds[0].split('@')[0]}, glad to have you here! \n\n🤖 Type *.help* to explore the Mars_16 command module engine.`;
+            const welcomeText = `🌟 *WELCOME TO THE CLAN!* 🌟\n\nHey @${notification.recipientIds.split('@')}, glad to have you here! \n\n🤖 Type *.help* to explore the Mars_16 command module engine.`;
             
             try {
                 const media = await MessageMedia.fromUrl(BOT_IMAGE_URL);
@@ -96,7 +101,7 @@ function initializePlatforms() {
             deleteContext: async () => { if (msg.delete) await msg.delete(true); },
             msgObj: msg, chatObj: chat, isGroupAdmin: isAdmin
         };
-        await handleIncomingCommand(context, waClient);
+        await handlerModule.handleIncomingCommand(context, waClient);
     });
 
     waClient.initialize();
@@ -114,7 +119,7 @@ function initializePlatforms() {
                 deleteContext: async () => { await ctx.deleteMessage().catch(() => {}); },
                 msgObj: ctx.message, chatObj: ctx.chat, isGroupAdmin: true
             };
-            await handleIncomingCommand(context, waClient);
+            await handlerModule.handleIncomingCommand(context, waClient);
         });
         tgBot.launch().then(() => console.log('🚀 Telegram Framework connected and polling.'));
     }
