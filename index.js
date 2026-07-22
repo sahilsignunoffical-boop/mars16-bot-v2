@@ -1,0 +1,104 @@
+const { Client: WAClient, RemoteAuth } = require('whatsapp-web.js');
+const express = require('express');
+const mongoose = require('mongoose');
+const { MongoStore } = require('wwebjs-mongo');
+const qrcode = require('qrcode-terminal');
+
+const { MONGO_URI, TARGET_PHONE_NUMBER } = require('./config');
+const { handleIncomingCommand } = require('./handler');
+const { Reminder } = require('./config');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => res.send('Mars_16 Engine Layer Active via Pairing Infrastructure.'));
+
+function startReminderDaemon(waClient) {
+    setInterval(async () => {
+        try {
+            const now = new Date();
+            const dueReminders = await Reminder.find({ targetTime: { $lte: now } });
+            
+            for (let r of dueReminders) {
+                try {
+                    const chat = await waClient.getChatById(r.groupId);
+                    if (r.tagAllTrigger) {
+                        const readMore = String.fromCharCode(8206).repeat(4000);
+                        let msg = `⏰ *ALERT: TIME TO ENGAGE!* \n📝 *Context:* ${r.text}\n${readMore}\n`;
+                        let mentions = [];
+                        for(let p of chat.participants) {
+                            mentions.push(p.id._serialized);
+                            msg += `@${p.id.user} `;
+                        }
+                        await chat.sendMessage(msg, { mentions });
+                    } else {
+                        await chat.sendMessage(`⏰ *REMINDER EXECUTED* \n\n${r.text}`);
+                    }
+                    await Reminder.deleteOne({ _id: r._id });
+                } catch (err) {
+                    await Reminder.deleteOne({ _id: r._id });
+                }
+            }
+        } catch (e) {
+            console.error("Daemon cron process failure:", e);
+        }
+    }, 30000);
+}
+
+function initializePlatforms() {
+    const store = new MongoStore({ mongoose: mongoose });
+    const waClient = new WAClient({
+        authStrategy: new RemoteAuth({ store, backupSyncIntervalMs: 60000 }),
+        puppeteer: {
+            headless: true,
+            executablePath: '/usr/bin/google-chrome',
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+        }
+    });
+
+    waClient.on('qr', async (qr) => {
+        console.log("⚠️ Fetching connection pairing code...");
+        try {
+            const pairingCode = await waClient.requestPairingCode(TARGET_PHONE_NUMBER);
+            console.log("\n=======================================================");
+            console.log(`🔢 YOUR WHATSAPP PAIRING CODE IS:  ${pairingCode}  🔢`);
+            console.log("=======================================================\n");
+        } catch (err) {
+            console.error("❌ Failed to retrieve pairing code:", err);
+        }
+    });
+
+    waClient.on('ready', () => { 
+        console.log('🚀 WhatsApp Connected successfully via device pairing.');
+        startReminderDaemon(waClient);
+    });
+
+    waClient.on('message', async (msg) => {
+        const chat = await msg.getChat();
+        let isAdmin = false;
+        if (chat.isGroup) {
+            const userObj = chat.participants.find(p => p.id._serialized === (msg.author || msg.from));
+            isAdmin = userObj ? (userObj.isAdmin || userObj.isSuperAdmin) : false;
+        }
+        
+        const context = {
+            platform: 'whatsapp',
+            groupId: chat.id._serialized,
+            senderId: msg.author || msg.from,
+            senderName: msg._data?.notifyName || 'User',
+            rawBody: msg.body,
+            replyContext: async (t) => await msg.reply(t),
+            kickContext: async (u) => { if (chat.isGroup) await chat.removeParticipants([u]); },
+            deleteContext: async () => { if (msg.delete) await msg.delete(true); },
+            msgObj: msg,
+            chatObj: chat,
+            isGroupAdmin: isAdmin
+        };
+        await handleIncomingCommand(context, waClient);
+    });
+
+    waClient.initialize();
+}
+
+mongoose.connection.once('open', initializePlatforms);
+app.listen(PORT);
