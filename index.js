@@ -3,16 +3,15 @@ const { Telegraf: TelegramBot } = require('telegraf');
 const express = require('express');
 const mongoose = require('mongoose');
 const { MongoStore } = require('wwebjs-mongo');
-const qrcode = require('qrcode-terminal');
 
-const { MONGO_URI, TARGET_PHONE_NUMBER, TELEGRAM_TOKEN } = require('./config');
+const { MONGO_URI, TARGET_PHONE_NUMBER } = require('./config');
 const { handleIncomingCommand } = require('./handler');
 const { Reminder } = require('./config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.get('/', (req, res) => res.send('Mars_16 Multi-Platform Engine Layer Active.'));
+app.get('/', (req, res) => res.send('Mars_16 Universal Multi-Platform Engine is Online.'));
 
 function startReminderDaemon(waClient) {
     setInterval(async () => {
@@ -50,13 +49,13 @@ function initializePlatforms() {
     const store = new MongoStore({ mongoose: mongoose });
     
     // ----------------------------------------------------
-    // WHATSAPP PAIRING CODE ENGINE
+    // WHATSAPP PAIRING CONFIGURATION
     // ----------------------------------------------------
     const waClient = new WAClient({
         authStrategy: new RemoteAuth({ store, backupSyncIntervalMs: 60000 }),
         puppeteer: {
             headless: true,
-            executablePath: '/usr/bin/google-chrome',
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
         }
     });
@@ -68,6 +67,7 @@ function initializePlatforms() {
             console.log("\n=======================================================");
             console.log(`🔢 YOUR WHATSAPP PAIRING CODE IS:  ${pairingCode}  🔢`);
             console.log("=======================================================\n");
+            console.log("👉 Link it via WhatsApp -> Linked Devices -> Link with Phone Number.");
         } catch (err) {
             console.error("❌ Failed to retrieve pairing code:", err);
         }
@@ -105,9 +105,9 @@ function initializePlatforms() {
     waClient.initialize();
 
     // ----------------------------------------------------
-    // TELEGRAM CORE RUNTIME DETECTOR
+    // TELEGRAM INFRASTRUCTURE INITIALIZATION
     // ----------------------------------------------------
-    const tgTokenActual = process.env.TELEGRAM_TOKEN || TELEGRAM_TOKEN;
+    const tgTokenActual = process.env.TELEGRAM_TOKEN;
     if (tgTokenActual) {
         const tgBot = new TelegramBot(tgTokenActual);
 
@@ -125,14 +125,16 @@ function initializePlatforms() {
                 deleteContext: async () => { await ctx.deleteMessage().catch(() => {}); },
                 msgObj: ctx.message,
                 chatObj: ctx.chat,
-                isGroupAdmin: true // Telegram default optimization shortcut
+                isGroupAdmin: true
             };
             await handleIncomingCommand(context, waClient);
         });
 
         tgBot.launch()
-            .then(() => console.log('🚀 Telegram Framework actively connected and polling.'))
-            .catch(err => console.error('❌ Telegram start failure profile:', err));
+            .then(() => console.log('🚀 Telegram Framework connected and polling.'))
+            .catch(err => console.error('❌ Telegram start failure:', err));
+    } else {
+        console.log("⚠️ TELEGRAM_TOKEN environment variable not found on Render. Running WhatsApp only.");
     }
 }
 
