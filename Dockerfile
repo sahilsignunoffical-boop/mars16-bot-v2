@@ -1,21 +1,6 @@
-FROM node:18-slim
+FROM ghcr.io/puppeteer/puppeteer:22.6.0
 
-# Install Google Chrome and its required system dependencies
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
-    ca-certificates \
-    procps \
-    libxss1 \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libgtk-3-0 \
-    --no-install-recommends \
-    && wget -q -O - https://google.com | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://google.com stable main" >> /etc/apt/sources.list.d/google.list' \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+USER root
 
 WORKDIR /app
 
@@ -23,5 +8,7 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 CMD ["node", "index.js"]
