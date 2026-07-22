@@ -4,7 +4,6 @@ const moment = require('moment-timezone');
 
 async function handleStrikeAction(platform, groupId, userId, reason, replyContext, kickContext) {
     if (userId.includes('919310314801')) return; 
-    
     let record = await Strike.findOne({ groupId, userId });
     if (!record) record = new Strike({ groupId, userId, strikes: 0 });
     record.strikes += 1;
@@ -12,7 +11,7 @@ async function handleStrikeAction(platform, groupId, userId, reason, replyContex
     
     const cleanUser = userId.split('@');
     if (record.strikes >= 3) {
-        await replyContext(`🚫 *AUTOMATED BAN EXECUTION*\n\nUser @${cleanUser} has reached *3/3 STRIKES*. Evicting...`);
+        await replyContext(185);
         await kickContext(userId);
         await Strike.deleteOne({ groupId, userId }); 
     } else {
@@ -62,13 +61,11 @@ async function handleIncomingCommand(context, waClient) {
     if (!isTriggered || !commandString) return;
     const args = commandString.split(/ +/);
     const command = args.shift().toLowerCase();
-    // HELP MENU WITH AUTOMATED DP IMAGE ATTACHMENT
+    // HELP MENU WITH CORE ENGINE COMMAND MAP
     if (command === 'help') {
         const { MessageMedia } = require('whatsapp-web.js');
         const { BOT_IMAGE_URL } = require('./config.js');
-        
-        const menuText = `🌟 *WELCOME TO Mars_16 ❤️❤️❤️❤️❤️* \n\n🤖 *Group Bot — Commands*\n\n*🛠️ Utility*\n├→ *.ping* — Check if the bot is online\n└→ *.trans [language] <text>* — Translate text (defaults to English)\n\n*👥 Group Commands*\n├→ *.tagall* — Tag all members (Admins only)\n├→ *.tags* — Tag all for a bus run 🎫\n├→ *.tagadmin* — Mention group admins 🛡️\n├→ *.rules* — Show group rules\n├→ *.setrules <text>* — Set group rules (Admins only)\n├→ *.antipromo on/off* — Auto-delete links & stickers (Admins only)\n├→ *.mute @member* — Auto-delete their messages (Admins only)\n├→ *.unmute @member* — Stop auto-delete (Admins only)\n├→ *.kick @member* — Kick member from group (Admins only)\n└→ *.del* — Delete a message (reply to it, Admins only)\n\n*⏰ Reminders & Schedules*\n├→ *.remind 10m Task* — Alert for 10 mins\n├→ *.remind today 5pm Task* — Reminder later today\n├→ *.remind tomorrow 9am Task* — Reminder tomorrow\n├→ *.remind everyday 9am Alert* — Daily recurring reminder\n├→ *.remind 23/7/26 Task* — Target calendar date tracker\n├→ *.schedule 5:50pm Message* — Daily group schedule\n├→ *.schedulelist* — View all active schedules\n├→ *.remindlist* — View your active tasks\n└→ *.remindcancel <num>* — Cancel task by number\n\n*🛡️ Clan Defense Modules*\n├→ *.shield [duration]* — Activate shield drops countdown (e.g. \`.shield 8h\`)\n├→ *.shieldlist* — Review current structural shield profiles\n├→ *.datime [india/china]* — Global game clocks ⏰\n\n*🎮 Lords Mobile Features*\n├→ *.hunt* — Pull Alphabetical Monster Counter Index Menu\n└→ *.formation* — Tactical ratios guide`;
-
+        const menuText = `🌟 *WELCOME TO Mars_16 ❤️❤️❤️❤️❤️* \n\n🤖 *Group Bot — Commands Map*\n\n*🛠️ Utility*\n├→ *.ping* — System speed diagnostics\n└→ *.trans [lang] <text>* — Advanced multilingual translation core\n\n*👥 Group Management*\n├→ *.tagall* — Mass tag hidden layout (Invisible Read More extension)\n├→ *.tags [caption]* — Tag all for bus run notifications 🎫\n├→ *.tagadmin* — Mention group admins 🛡️\n├→ *.rules* / *.setrules* — Regulations adjustments panel\n├→ *.mute @member [hours]* / *.unmute @member*\n├→ *.kick @member* — Dismiss participant safely\n└→ *.del* — Purge targeted timeline message row\n\n*⏰ IST Reminders & Schedules*\n├→ *.remind 10m Task* — Relative timing clock trigger\n├→ *.remind today 5pm Task* — Log absolute target space today\n├→ *.remind tomorrow 9am Task* — Log task for tomorrow morning\n├→ *.remind everyday 9am Alert* — Daily recurring reminder\n├→ *.schedule 5:50pm Text* — Direct group target broadcast\n└→ *.remindlist* / *.remindcancel <num>*\n\n*🛡️ Clan Defense Modules*\n├→ *.shield [duration]* — Activate shield drops countdown (e.g. \`.shield 8h\`)\n├→ *.datime [india/china]* — Global game clocks ⏰\n\n*🎮 Lords Mobile Engines*\n├→ *.hunt* — View complete list of 24 monster lineups\n└→ *.formation* — Tactical ratios guidelines (569, 947, 956 targets)`;
         if (platform === 'whatsapp') {
             try {
                 const media = await MessageMedia.fromUrl(BOT_IMAGE_URL);
@@ -79,43 +76,46 @@ async function handleIncomingCommand(context, waClient) {
     }
 
     if (command === 'ping') {
-        return replyContext('🚀 Pong! Mars_16 Engine is fully operational.');
+        return replyContext('🚀 Pong! Mars_16 Multi-Platform Engine is fully operational.');
     }
 
+    // MULTI-DIRECTIONAL LANGUAGE DICTIONARY TRANSLATOR
     if (command === 'trans') {
         try {
             let targetLang = 'en';
             let textToTranslate = args.join(' ');
-            if (args.length >= 2) {
-                targetLang = args.shift().toLowerCase();
+            if (args.length >= 1) {
+                const requested = args[0].toLowerCase();
+                if (requested === 'chinese' || requested === 'zh') { targetLang = 'zh-CN'; args.shift(); }
+                else if (requested === 'hindi' || requested === 'hi') { targetLang = 'hi'; args.shift(); }
+                else if (requested === 'english' || requested === 'en') { targetLang = 'en'; args.shift(); }
                 textToTranslate = args.join(' ');
             }
             if (!textToTranslate && msgObj?.hasQuotedMsg) {
                 const quoted = await msgObj.getQuotedMessage();
                 textToTranslate = quoted.body;
             }
-            if (!textToTranslate) return replyContext("⚠️ Provide text or reply to a message to translate.");
+            if (!textToTranslate) return replyContext("⚠️ Reply to a message or input text string to translate.");
             const res = await translate(textToTranslate, { to: targetLang });
             return replyContext(`🌍 *Translation (${targetLang.toUpperCase()}):*\n\n${res.text}`);
-        } catch (err) { return replyContext("❌ Translation processing failed."); }
+        } catch (err) { return replyContext("❌ Translation operation failed."); }
     }
 
+    // HIDDEN TAGALL
     if (command === 'tagall' || command === 'tags') {
         if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin authentication required.");
-        const inputCaption = args.join(' ') || "Attention Everyone's";
+        const caption = args.join(' ') || (command === 'tags' ? "Bus Run Starting! Get your tickets 🎫" : "Attention Everyone's");
         const participants = chatObj.participants || [];
-        let mentionText = `🚨 *Important Message* 🚨\n\n◻ *Message:* ${inputCaption}\n\n◻ *ETIQUETAS:*`;
+        let mentionText = `🚨 *Important Message* 🚨\n\n◻ *Message:* ${caption}\n\n◻ *ETIQUETAS:*`;
         
         const readMoreSeparator = String.fromCharCode(8206).repeat(4000);
         mentionText += readMoreSeparator + `\n`;
-
         let mentions = [];
         for (let p of participants) {
             mentions.push(p.id._serialized);
             mentionText += `├→ @${p.id.user}\n`;
         }
-        mentionText += `\n_Thanks for using Mars 16 Bot_\n_Group: ${chatObj.name || 'CxH Admins'}_`;
-        
+        mentionText += `\n_Thanks for using Mars 16 Bot_\n_Group: ${chatObj.name || 'CxH Management'}_`;
         if (platform === 'whatsapp') await chatObj.sendMessage(mentionText, { mentions });
         else return replyContext(mentionText);
         return;
@@ -134,105 +134,155 @@ async function handleIncomingCommand(context, waClient) {
         else return replyContext(txt);
         return;
     }
-    if (command === 'gf') {
-        if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin authorization required.");
-        const scoreTarget = parseInt(args);
-        if (isNaN(scoreTarget)) return replyContext("⚠️ Syntax: Use `.gf [score]` (e.g., `.gf 4000`)");
-        await GuildFest.findOneAndUpdate({ groupId }, { targetScore: scoreTarget }, { upsert: true });
-        return replyContext(`🏆 *Guild Fest Baseline Configured!* All members must hit a minimum of *${scoreTarget} points*.`);
+    // CRON REMINDER MATRIX (IST ALIGNED)
+    if (command === 'remind' || command === 'schedule') {
+        try {
+            let fullInput = args.join(' ');
+            let targetTime = null;
+            let isRecurring = fullInput.toLowerCase().includes('everyday');
+            let tagAllTrigger = fullInput.toLowerCase().includes('tagall') || fullInput.toLowerCase().includes('.tagall');
+            let referenceIST = moment.tz("Asia/Kolkata");
+
+            if (/^\d+m\s/i.test(fullInput)) {
+                const mins = parseInt(fullInput.match(/^(\d+)m/i));
+                targetTime = referenceIST.clone().add(mins, 'minutes').toDate();
+                fullInput = fullInput.replace(/^\d+m\s+/i, '');
+            } 
+            else if (/^today\s+(\d+)(am|pm)/i.test(fullInput)) {
+                const match = fullInput.match(/^today\s+(\d+)(am|pm)/i);
+                let hr = parseInt(match[1]);
+                if (match[2].toLowerCase() === 'pm' && hr < 12) hr += 12;
+                if (match[2].toLowerCase() === 'am' && hr === 12) hr = 0;
+                targetTime = referenceIST.clone().hour(hr).minute(0).second(0).toDate();
+                fullInput = fullInput.replace(/^today\s+\d+(am|pm)\s+/i, '');
+            }
+            else if (/^tomorrow\s+(\d+)(am|pm)/i.test(fullInput)) {
+                const match = fullInput.match(/^tomorrow\s+(\d+)(am|pm)/i);
+                let hr = parseInt(match[1]);
+                if (match[2].toLowerCase() === 'pm' && hr < 12) hr += 12;
+                if (match[2].toLowerCase() === 'am' && hr === 12) hr = 0;
+                targetTime = referenceIST.clone().add(1, 'day').hour(hr).minute(0).second(0).toDate();
+                fullInput = fullInput.replace(/^tomorrow\s+\d+(am|pm)\s+/i, '');
+            }
+
+            if (!targetTime) return replyContext("⚠️ Syntax examples:\n• `.remind 10m wonder rally tagall`\n• `.remind today 11pm shield` ");
+
+            const freshRemind = new Reminder({
+                groupId, setterName: senderName, targetTime, text: fullInput, isRecurring, tagAllTrigger
+            });
+            await freshRemind.save();
+            return replyContext(`✅ *Schedule Clock Registered (IST)!* \nTarget Date Time: ${moment(targetTime).tz("Asia/Kolkata").format('DD/MM/YYYY hh:mm A')}\n📝 Task: ${fullInput}`);
+        } catch (e) { return replyContext("❌ Reminder scheduling parameter fault."); }
     }
 
     if (command === 'shield') {
         const inputDuration = args?.toLowerCase();
-        if (!inputDuration) return replyContext("⚠️ Syntax: Use `.shield [duration]` (e.g., `.shield 8h`)");
-        let durationValue = parseInt(inputDuration);
-        let timeUnit = 'hours';
-        if (inputDuration.includes('d')) timeUnit = 'days';
-        if (isNaN(durationValue) || durationValue <= 0) return replyContext("⚠️ Provide a valid duration parameter.");
+        if (!inputDuration) return replyContext("⚠️ Syntax: `.shield 8h` or `.shield 3d` ");
+        let value = parseInt(inputDuration);
+        let unit = 'hours';
+        if (inputDuration.includes('d')) unit = 'days';
+        let expiry = moment.tz("Asia/Kolkata").add(value, unit);
 
-        let calculatedExpiry = moment.tz("Asia/Kolkata").add(durationValue, timeUnit);
-        await ShieldTracker.findOneAndUpdate({ groupId, userId: senderId }, { userName: senderName, expiryTime: calculatedExpiry.toDate() }, { upsert: true });
-
-        const warningBufferTime = calculatedExpiry.clone().subtract(15, 'minutes').toDate();
-        const freshAlert = new Reminder({
-            groupId, setterName: senderName, targetTime: warningBufferTime,
-            text: `⚠️ *CRITICAL PROFILE NOTIFICATION* \n@${senderId.split('@')} Shield drops in 15 minutes! Refresh protection defenses!`,
-            isRecurring: false, tagAllTrigger: true
-        });
-        await freshAlert.save();
-        return replyContext(`🛡️ *Shield Registration Confirmed!* \n\n⏳ *Duration:* ${durationValue} ${timeUnit}\n📅 *IST Expiration Target:* ${calculatedExpiry.format('DD/MM/YYYY hh:mm A')}`);
+        await ShieldTracker.findOneAndUpdate({ groupId, userId: senderId }, { userName: senderName, expiryTime: expiry.toDate() }, { upsert: true });
+        return replyContext(`🛡️ *Alliance Protection Shield Logged!* \nIST Expiration: ${expiry.format('DD/MM/YYYY hh:mm A')} (IST).`);
     }
 
     if (command === 'mute') {
-        if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin privileges required.");
-        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : (msgObj.mentionedIds && msgObj.mentionedIds[0] ? msgObj.mentionedIds[0] : null);
-        if (!target) return replyContext("⚠️ Mention a member or reply to mute them.");
-        let hours = parseFloat(args) || 24;
-        let until = new Date(Date.now() + hours * 60 * 60 * 1000);
+        if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin authentication required.");
+        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.[0];
+        if (!target) return replyContext("⚠️ Mention user or reply to mute them.");
+        let until = new Date(Date.now() + 24 * 60 * 60 * 1000);
         await GroupConfig.findOneAndUpdate({ groupId }, { $push: { mutedUsers: { userId: target, mutedUntil: until } } }, { upsert: true });
-        return replyContext(`🔇 Muted user cleanly for *${hours} hours*.`);
+        return replyContext(`🔇 Muted participant messages inside target space.`);
     }
 
     if (command === 'unmute') {
-        if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin privileges required.");
-        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : (msgObj.mentionedIds && msgObj.mentionedIds[0] ? msgObj.mentionedIds[0] : null);
-        if (!target) return replyContext("⚠️ Mention a member.");
+        if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin authentication required.");
+        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.[0];
+        if (!target) return replyContext("⚠️ Mention target.");
         await GroupConfig.findOneAndUpdate({ groupId }, { $pull: { mutedUsers: { userId: target } } });
-        return replyContext(`🔊 Unmuted member successfully.`);
+        return replyContext(`🔊 Permissions restored.`);
     }
 
     if (command === 'kick') {
-        if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin authorization required.");
-        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : (msgObj.mentionedIds && msgObj.mentionedIds[0] ? msgObj.mentionedIds[0] : null);
-        if (!target) return replyContext("⚠️ Target a user via mention or reply.");
-        if (target.includes('919310314801')) return replyContext("🛡️ That user is immune.");
+        if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin authentication required.");
+        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.[0];
+        if (!target || target.includes('919310314801')) return replyContext("🛡️ Invalid context block path.");
         await kickContext(target);
-        return replyContext("✅ Target dismissed from group profile.");
+        return replyContext("✅ Process finalized.");
     }
 
     if (command === 'del') {
-        if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin authorization required.");
+        if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin authentication required.");
         if (msgObj?.hasQuotedMsg) {
             const quoted = await msgObj.getQuotedMessage();
             await quoted.delete(true);
-        } else { return replyContext("⚠️ Reply to the target message you want to delete."); }
+        }
         return;
     }
-
-    if (command === 'datime') {
-        const zone = args?.toLowerCase();
-        const baseShowdownGMT = moment.tz("12:00", "HH:mm", "GMT");
-        const baseArenaGMT = moment.tz("21:00", "HH:mm", "GMT");
-        if (zone === 'china' || zone === 'cst') {
-            return replyContext(`🇨🇳 *Lords Mobile China (CST) Timings:*\n\n⚔️ *Dragon Showdown:* ${baseShowdownGMT.clone().tz("Asia/Shanghai").format("hh:mm A")}\n🏟️ *Arena Reset:* ${baseArenaGMT.clone().tz("Asia/Shanghai").format("hh:mm A")}`);
-        }
-        if (zone === 'india' || zone === 'ist') {
-            return replyContext(`🇮🇳 *Lords Mobile India (IST) Timings:*\n\n⚔️ *Dragon Showdown:* ${baseShowdownGMT.clone().tz("Asia/Kolkata").format("hh:mm A")}\n🏟️ *Arena Reset:* ${baseArenaGMT.clone().tz("Asia/Kolkata").format("hh:mm A")}`);
-        }
-        return replyContext("⚠️ Use `.datime india` or `.datime china` ");
-    }
-
     if (command === 'formation') {
-        return replyContext(`🛡️ *LORDS MOBILE STRATEGIC FORMATIONS GUIDE* \n\n• *Tactical Lineups (569 / 947 / 956 / 7 / 11 / 2)*:\n  ├→ Optimal for breaking frontlines.\n  └→ Ratio Balance: *50% T4 & 50% T5* or *60% to 40%* setups.\n\n• *Rally Formations*:\n  ├→ *Standard Push*: 60% T4 / 40% T5 balanced ratio.\n  ├→ *Heavy Frontline Wall*: 80% T4 and 20% T5 to absorb massive shocks.\n  └→ Keep layers optimized to prevent getting zeroed.`);
+        return replyContext(`⚔️ *MARS_16 FORMATION DIRECTIVE GUIDE* ⚔️\n\n• *Tactical Arrays (569 / 947 / 956 / 7 / 11 / 2)*:\n  ├→ Optimal target configuration fronts.\n  ├→ Deployment Ratio: *50% T4 & 50% T5* layers.\n  └→ Alternative Push Balance: *60% T4 down to 40% T5* elements.`);
     }
 
+    // COMPLETE RECONSTRUCTED 24 LORDS MOBILE MONSTER HUNTS SELECTION MODULE
     if (command === 'hunt') {
-        const submenu = args[0] ? args[0].toLowerCase() : null;
-        if (!submenu) {
-            return replyContext(`👾 *Mars_16 Lords Mobile Hunt Lineups Index* \nUse \`.hunt a\`, \`.hunt f\`, \`.hunt h\`, or \`.hunt n\` to view target sets:\n\n✨ *[a]*: Bon Appétit, Arctic Flipper, Blackwing, Cottageroar\n✨ *[f]*: Frostwing, Gargantua, Gawrilla, Grim Reaper, Gryphon\n✨ *[h]*: Hardrox, Hell Drider, Jade Wyrm, Hootclaw, Mecha Trojan, Mega Maggot\n✨ *[n]*: Necrosis, Noceros, Queen Bee, Saberfang, Serpent Gladiator, Snow Beast, Terrorthorn, Tidal Titan, Voodoo Shaman`);
-        }
-        if (submenu === 'a') {
-            return replyContext(`🍖 *BON APPÉTIT*:\n• Black Crow, Tracker, Scarlet Bolt, Trickster, Demon Slayer\n\n🐬 *Arctic Flipper*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🦅 *Blackwing*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🦁 *Cottageroar*:\n• Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin`);
-        }
-        if (submenu === 'f') {
-            return replyContext(`❄️ *Frostwing*:\n• Incinerator, Elementalist, Prima Donna, Bombin Goblin, Sage of Storms\n\n👹 *Gargantua*:\n• Incinerator, Elementalist, Prima Donna, Bombin Goblin, Sage of Storms\n\n🦍 *Gawrilla*:\n• Incinerator, Elementalist, Prima Donna, Sage of Storms, Sea Squire\n\n💀 *Grim Reaper*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🦁 *Gryphon*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster`);
-        }
-        if (submenu === 'h') {
-            return replyContext(`💎 *Hardrox*:\n• Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin\n\n🔥 *Hell Drider*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🐲 *Jade Wyrm*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🦉 *Hootclaw*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🤖 *Mecha Trojan*:\n• Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin\n\n🐛 *Mega Maggot*:\n• Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin`);
-        }
-        if (submenu === 'n') {
-            return replyContext(`🧟 *Necrosis*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🦏 *Noceros*:\n• Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin\n\n🐝 *Queen Bee*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🐯 *Saberfang*:\n• Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin\n\n⚔️ *Serpent Gladiator*:\n• Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin\n\n⛄ *Snow Beast*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🌵 *Terrorthorn*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🌊 *Tidal Titan*:\n• Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin\n\n🔮 *Voodoo Shaman*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster`);
-        }
+        const indexList = `👾 *Mars_16 Universal Monster Hunting Directory* 👾\n\n1. Bon Appétit\n2. Arctic Flipper\n3. Blackwing\n4. Frostwing\n5. Gargantua\n6. Gawrilla\n7. Grim Reaper\n8. Gryphon\n9. Hardrox\n10. Hell Drider\n11. Jade Wyrm\n12. Hootclaw\n13. Mecha Trojan\n14. Mega Maggot\n15. Necrosis\n16. Noceros\n17. Queen Bee\n18. Saberfang\n19. Serpent Gladiator\n20. Snow Beast\n21. Terrorthorn\n22. Tidal Titan\n23. Voodoo Shaman\n24. Cottageroar\n\n👉 *Query Syntax:* Type \`.hunt <number>\` or \`.hunt <name>\` to read specific hero lineups.`;
+        const query = args.join(' ').toLowerCase().trim();
+        if (!query) return replyContext(indexList);
+
+        const profiles = {
+            '1': '🍖 *BON APPÉTIT HERO LINEUP*:\n• Physical: Black Crow, Tracker, Scarlet Bolt, Trickster, Demon Slayer',
+            'bon appetit': '🍖 *BON APPÉTIT HERO LINEUP*:\n• Physical: Black Crow, Tracker, Scarlet Bolt, Trickster, Demon Slayer',
+            '2': '🐬 *ARCTIC FLIPPER HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'arctic flipper': '🐬 *ARCTIC FLIPPER HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '3': '🦅 *BLACKWING HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'blackwing': '🦅 *BLACKWING HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '4': '❄️ *FROSTWING HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Bombin Goblin, Sage of Storms',
+            'frostwing': '❄️ *FROSTWING HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Bombin Goblin, Sage of Storms',
+            '5': '👹 *GARGANTUA HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Bombin Goblin, Sage of Storms',
+            'gargantua': '👹 *GARGANTUA HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Bombin Goblin, Sage of Storms',
+            '6': '🦍 *GAWRILLA HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Sea Squire',
+            'gawrilla': '🦍 *GAWRILLA HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Sea Squire',
+            '7': '💀 *GRIM REAPER HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'grim reaper': '💀 *GRIM REAPER HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '8': '🦁 *GRYPHON HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'gryphon': '🦁 *GRYPHON HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '9': '💎 *HARDROX HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            'hardrox': '💎 *HARDROX HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            '10': '🔥 *HELL DRIDER HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'hell drider': '🔥 *HELL DRIDER HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '11': '🐲 *JADE WYRM HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'jade wyrm': '🐲 *JADE WYRM HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '12': '🦉 *HOOTCLAW HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'hootclaw': '🦉 *HOOTCLAW HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '13': '🤖 *MECHA TROJAN HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            'mecha trojan': '🤖 *MECHA TROJAN HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            '14': '🐛 *MEGA MAGGOT HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            'mega maggot': '🐛 *MEGA MAGGOT HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            '15': '🧟 *NECROSIS HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'necrosis': '🧟 *NECROSIS HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '16': '🦏 *NOCEROS HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            'noceros': '🦏 *NOCEROS HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            '17': '🐝 *QUEEN BEE HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'queen bee': '🐝 *QUEEN BEE HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '18': '🐯 *SABERFANG HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            'saberfang': '🐯 *SABERFANG HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            '19': '⚔️ *SERPENT GLADIATOR HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            'serpent gladiator': '⚔️ *SERPENT GLADIATOR HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            '20': '⛄ *SNOW BEAST HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'snow beast': '⛄ *SNOW BEAST HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '21': '🌵 *TERRORTHORN HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'terrorthorn': '🌵 *TERRORTHORN HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '22': '🌊 *TIDAL TITAN HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            'tidal titan': '🌊 *TIDAL TITAN HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            '23': '🔮 *VOODOO SHAMAN HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            'voodoo shaman': '🔮 *VOODOO SHAMAN HERO LINEUP*:\n• Physical: Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster',
+            '24': '🦁 *COTTAGEROAR HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin',
+            'cottageroar': '🦁 *COTTAGEROAR HERO LINEUP*:\n• Magical: Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin'
+        };
+
+        const targetData = profiles[query];
+        return replyContext(targetData || `❌ Monster profile matching [${query}] not located in databases.`);
     }
 }
 
