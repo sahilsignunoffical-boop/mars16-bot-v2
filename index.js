@@ -5,20 +5,18 @@ const mongoose = require('mongoose');
 const { MongoStore } = require('wwebjs-mongo');
 const qrcode = require('qrcode-terminal');
 
-// Explicitly pointing to full file names to resolve internal node lookup modules
 const configModule = require('./config.js');
 const handlerModule = require('./handler.js');
 
 const MONGO_URI = configModule.MONGO_URI;
 const TARGET_PHONE_NUMBER = configModule.TARGET_PHONE_NUMBER;
 const TELEGRAM_TOKEN = configModule.TELEGRAM_TOKEN;
-const BOT_IMAGE_URL = configModule.BOT_IMAGE_URL;
 const Reminder = configModule.Reminder;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.get('/', (req, res) => res.send('Mars_16 Engine Layer Active.'));
+app.get('/', (req, res) => res.send('Mars_16 Multi-Platform Core Engine Active.'));
 
 function startReminderDaemon(waClient) {
     setInterval(async () => {
@@ -31,17 +29,17 @@ function startReminderDaemon(waClient) {
                     const chat = await waClient.getChatById(r.groupId);
                     if (r.tagAllTrigger) {
                         const readMore = String.fromCharCode(8206).repeat(4000);
-                        let msg = `⏰ *ALERT: TIME TO ENGAGE!* \n📝 *Context:* ${r.text}\n${readMore}\n`;
+                        let msg = `🚨 *MARS_16 CRITICAL RUN TIME ALERT!* 🚨\n\n📝 *Task Detail:* ${r.text}\n${readMore}\n`;
                         let mentions = chat.participants.map(p => p.id._serialized);
                         await chat.sendMessage(msg, { mentions });
                     } else {
-                        await chat.sendMessage(`⏰ *REMINDER EXECUTED* \n\n${r.text}`);
+                        await chat.sendMessage(`⏰ *REMINDER BROADCAST (IST)* ⏰\n\n👤 *Logged By:* ${r.setterName}\n📝 *Context:* ${r.text}`);
                     }
                     await Reminder.deleteOne({ _id: r._id });
                 } catch (err) { await Reminder.deleteOne({ _id: r._id }); }
             }
         } catch (e) { console.error("Daemon cron process failure:", e); }
-    }, 30000);
+    }, 15000); // Check every 15 seconds for precision matching
 }
 
 function initializePlatforms() {
@@ -51,38 +49,38 @@ function initializePlatforms() {
         puppeteer: {
             headless: true,
             executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+            // Optimized flags to prevent page evaluation crashes
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-extensions',
+                '--no-first-run',
+                '--no-default-browser-check',
+                '--unhandled-rejections=strict'
+            ]
         }
     });
 
     waClient.on('qr', async (qr) => {
-        console.log("⚠️ Fetching connection pairing code...");
+        console.log("⚠️ Initializing Phone Pairing String Request Stream...");
         try {
-            const pairingCode = await waClient.requestPairingCode(TARGET_PHONE_NUMBER);
-            console.log("\n=======================================================");
-            console.log(`🔢 YOUR WHATSAPP PAIRING CODE IS:  ${pairingCode}  🔢`);
-            console.log("=======================================================\n");
-        } catch (err) { console.error("Pairing calculation crash: ", err); }
+            // Delay request slightly to ensure internal engine pages evaluate completely first
+            setTimeout(async () => {
+                try {
+                    const pairingCode = await waClient.requestPairingCode(TARGET_PHONE_NUMBER);
+                    console.log("\n=======================================================");
+                    console.log(`🔢 YOUR WHATSAPP PAIRING CODE IS:  ${pairingCode}  🔢`);
+                    console.log("=======================================================\n");
+                } catch (inner) { console.error("Internal pairing verification error:", inner); }
+            }, 5000);
+        } catch (err) { console.error("Pairing calculation crash handled:", err); }
     });
 
     waClient.on('ready', () => { 
-        console.log('🚀 WhatsApp Connected successfully via device pairing.');
+        console.log('🚀 WhatsApp Engine actively authenticated and connected.');
         startReminderDaemon(waClient);
-    });
-
-    waClient.on('group_join', async (notification) => {
-        try {
-            const { MessageMedia } = require('whatsapp-web.js');
-            const chat = await notification.getChat();
-            const welcomeText = `🌟 *WELCOME TO THE CLAN!* 🌟\n\nHey @${notification.recipientIds.split('@')}, glad to have you here! \n\n🤖 Type *.help* to explore the Mars_16 command module engine.`;
-            
-            try {
-                const media = await MessageMedia.fromUrl(BOT_IMAGE_URL);
-                await chat.sendMessage(media, { caption: welcomeText, mentions: notification.recipientIds });
-            } catch (err) {
-                await chat.sendMessage(welcomeText, { mentions: notification.recipientIds });
-            }
-        } catch (e) { console.error("Welcome logic fail: ", e); }
     });
 
     waClient.on('message', async (msg) => {
