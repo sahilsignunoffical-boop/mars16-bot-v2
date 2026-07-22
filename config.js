@@ -1,15 +1,21 @@
 const mongoose = require('mongoose');
 
+// Central Identity Configuration
 const SUPER_ADMIN = '919310314801@c.us'; 
 const TARGET_PHONE_NUMBER = '918800952400'; 
+
+// Points directly to the bot_dp.jpg image asset uploaded inside your repository
 const BOT_IMAGE_URL = 'https://githubusercontent.com';
 
+// Core Connection Management String Linked directly to your active Mongo Cluster Profile
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://sahilsignunoffical_db_user:ibmAj5hxtrz6vNmQ@cluster0.ohhvv7y.mongodb.net/whatsapp_bot?retryWrites=true&w=majority';
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || '8770167093:AAGoBPUTJRD4cFMFnxf4dIFj-3I4a157eBw';
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log('📦 Connected to MongoDB Shared Cluster.'))
     .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
+// Database Operational Schemas Definitions
 const GuildFest = mongoose.model('GuildFest', new mongoose.Schema({
     groupId: { type: String, unique: true, index: true },
     targetScore: { type: Number, default: 0 } 
@@ -49,6 +55,7 @@ const Reminder = mongoose.model('Reminder', new mongoose.Schema({
 let configCache = new Map();
 let floodTracker = new Map(); 
 
+// Multi-language Profanity Abuse Filter Registry Base
 const abuseBlacklist = [
     'chutiya', 'bhenchod', 'gandu', 'madarchod', 'laundu', 'harami', 'bsdk', 'saala',
     'abuse1', 'abuse2', 'badword', 'bastard', 'scam', 'puta', 'caonima', 'shabi'
@@ -68,6 +75,7 @@ module.exports = {
     SUPER_ADMIN,
     TARGET_PHONE_NUMBER,
     BOT_IMAGE_URL,
+    TELEGRAM_TOKEN,
     GroupConfig,
     Strike,
     Reminder,
