@@ -3,15 +3,16 @@ const { Telegraf: TelegramBot } = require('telegraf');
 const express = require('express');
 const mongoose = require('mongoose');
 const { MongoStore } = require('wwebjs-mongo');
+const qrcode = require('qrcode-terminal');
 
-const { MONGO_URI, TARGET_PHONE_NUMBER } = require('./config');
+const { MONGO_URI, TARGET_PHONE_NUMBER, TELEGRAM_TOKEN, BOT_IMAGE_URL } = require('./config');
 const { handleIncomingCommand } = require('./handler');
 const { Reminder } = require('./config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.get('/', (req, res) => res.send('Mars_16 Universal Multi-Platform Engine is Online.'));
+app.get('/', (req, res) => res.send('Mars_16 Engine Layer Active.'));
 
 function startReminderDaemon(waClient) {
     setInterval(async () => {
@@ -25,29 +26,20 @@ function startReminderDaemon(waClient) {
                     if (r.tagAllTrigger) {
                         const readMore = String.fromCharCode(8206).repeat(4000);
                         let msg = `⏰ *ALERT: TIME TO ENGAGE!* \n📝 *Context:* ${r.text}\n${readMore}\n`;
-                        let mentions = [];
-                        for(let p of chat.participants) {
-                            mentions.push(p.id._serialized);
-                            msg += `@${p.id.user} `;
-                        }
+                        let mentions = chat.participants.map(p => p.id._serialized);
                         await chat.sendMessage(msg, { mentions });
                     } else {
                         await chat.sendMessage(`⏰ *REMINDER EXECUTED* \n\n${r.text}`);
                     }
                     await Reminder.deleteOne({ _id: r._id });
-                } catch (err) {
-                    await Reminder.deleteOne({ _id: r._id });
-                }
+                } catch (err) { await Reminder.deleteOne({ _id: r._id }); }
             }
-        } catch (e) {
-            console.error("Daemon cron process failure:", e);
-        }
+        } catch (e) { console.error("Daemon cron process failure:", e); }
     }, 30000);
 }
 
 function initializePlatforms() {
     const store = new MongoStore({ mongoose: mongoose });
-    
     const waClient = new WAClient({
         authStrategy: new RemoteAuth({ store, backupSyncIntervalMs: 60000 }),
         puppeteer: {
@@ -64,15 +56,28 @@ function initializePlatforms() {
             console.log("\n=======================================================");
             console.log(`🔢 YOUR WHATSAPP PAIRING CODE IS:  ${pairingCode}  🔢`);
             console.log("=======================================================\n");
-            console.log("👉 Link it via WhatsApp -> Linked Devices -> Link with Phone Number.");
-        } catch (err) {
-            console.error("❌ Failed to retrieve pairing code:", err);
-        }
+        } catch (err) { console.error("Pairing calculation crash: ", err); }
     });
 
     waClient.on('ready', () => { 
         console.log('🚀 WhatsApp Connected successfully via device pairing.');
         startReminderDaemon(waClient);
+    });
+
+    // Welcome Greeting Handler with Profile Image Attachment
+    waClient.on('group_join', async (notification) => {
+        try {
+            const { MessageMedia } = require('whatsapp-web.js');
+            const chat = await notification.getChat();
+            const welcomeText = `🌟 *WELCOME TO THE CLAN!* 🌟\n\nHey @${notification.recipientIds[0].split('@')[0]}, glad to have you here! \n\n🤖 Type *.help* to explore the Mars_16 command module engine.`;
+            
+            try {
+                const media = await MessageMedia.fromUrl(BOT_IMAGE_URL);
+                await chat.sendMessage(media, { caption: welcomeText, mentions: notification.recipientIds });
+            } catch (err) {
+                await chat.sendMessage(welcomeText, { mentions: notification.recipientIds });
+            }
+        } catch (e) { console.error("Welcome logic fail: ", e); }
     });
 
     waClient.on('message', async (msg) => {
@@ -84,51 +89,34 @@ function initializePlatforms() {
         }
         
         const context = {
-            platform: 'whatsapp',
-            groupId: chat.id._serialized,
-            senderId: msg.author || msg.from,
-            senderName: msg._data?.notifyName || 'User',
-            rawBody: msg.body,
+            platform: 'whatsapp', groupId: chat.id._serialized, senderId: msg.author || msg.from,
+            senderName: msg._data?.notifyName || 'User', rawBody: msg.body,
             replyContext: async (t) => await msg.reply(t),
             kickContext: async (u) => { if (chat.isGroup) await chat.removeParticipants([u]); },
             deleteContext: async () => { if (msg.delete) await msg.delete(true); },
-            msgObj: msg,
-            chatObj: chat,
-            isGroupAdmin: isAdmin
+            msgObj: msg, chatObj: chat, isGroupAdmin: isAdmin
         };
         await handleIncomingCommand(context, waClient);
     });
 
     waClient.initialize();
 
-    const tgTokenActual = process.env.TELEGRAM_TOKEN;
+    const tgTokenActual = process.env.TELEGRAM_TOKEN || TELEGRAM_TOKEN;
     if (tgTokenActual) {
         const tgBot = new TelegramBot(tgTokenActual);
-
         tgBot.on('message', async (ctx) => {
             if (!ctx.message || !ctx.message.text) return;
-            
             const context = {
-                platform: 'telegram',
-                groupId: ctx.chat.id.toString(),
-                senderId: ctx.from.id.toString(),
-                senderName: ctx.from.first_name || 'User',
-                rawBody: ctx.message.text,
+                platform: 'telegram', groupId: ctx.chat.id.toString(), senderId: ctx.from.id.toString(),
+                senderName: ctx.from.first_name || 'User', rawBody: ctx.message.text,
                 replyContext: async (t) => await ctx.reply(t),
                 kickContext: async (u) => { await ctx.banChatMember(Number(u)).catch(() => {}); },
                 deleteContext: async () => { await ctx.deleteMessage().catch(() => {}); },
-                msgObj: ctx.message,
-                chatObj: ctx.chat,
-                isGroupAdmin: true
+                msgObj: ctx.message, chatObj: ctx.chat, isGroupAdmin: true
             };
             await handleIncomingCommand(context, waClient);
         });
-
-        tgBot.launch()
-            .then(() => console.log('🚀 Telegram Framework connected and polling.'))
-            .catch(err => console.error('❌ Telegram start failure:', err));
-    } else {
-        console.log("⚠️ TELEGRAM_TOKEN environment variable not found on Render. Running WhatsApp only.");
+        tgBot.launch().then(() => console.log('🚀 Telegram Framework connected and polling.'));
     }
 }
 
