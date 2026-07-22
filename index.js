@@ -48,9 +48,6 @@ function startReminderDaemon(waClient) {
 function initializePlatforms() {
     const store = new MongoStore({ mongoose: mongoose });
     
-    // ----------------------------------------------------
-    // WHATSAPP PAIRING CONFIGURATION
-    // ----------------------------------------------------
     const waClient = new WAClient({
         authStrategy: new RemoteAuth({ store, backupSyncIntervalMs: 60000 }),
         puppeteer: {
@@ -104,9 +101,6 @@ function initializePlatforms() {
 
     waClient.initialize();
 
-    // ----------------------------------------------------
-    // TELEGRAM INFRASTRUCTURE INITIALIZATION
-    // ----------------------------------------------------
     const tgTokenActual = process.env.TELEGRAM_TOKEN;
     if (tgTokenActual) {
         const tgBot = new TelegramBot(tgTokenActual);
