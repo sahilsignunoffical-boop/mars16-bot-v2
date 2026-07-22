@@ -1,17 +1,18 @@
 const { Client: WAClient, RemoteAuth } = require('whatsapp-web.js');
+const { Telegraf: TelegramBot } = require('telegraf');
 const express = require('express');
 const mongoose = require('mongoose');
 const { MongoStore } = require('wwebjs-mongo');
 const qrcode = require('qrcode-terminal');
 
-const { MONGO_URI, TARGET_PHONE_NUMBER } = require('./config');
+const { MONGO_URI, TARGET_PHONE_NUMBER, TELEGRAM_TOKEN } = require('./config');
 const { handleIncomingCommand } = require('./handler');
 const { Reminder } = require('./config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.get('/', (req, res) => res.send('Mars_16 Engine Layer Active via Pairing Infrastructure.'));
+app.get('/', (req, res) => res.send('Mars_16 Multi-Platform Engine Layer Active.'));
 
 function startReminderDaemon(waClient) {
     setInterval(async () => {
@@ -47,6 +48,10 @@ function startReminderDaemon(waClient) {
 
 function initializePlatforms() {
     const store = new MongoStore({ mongoose: mongoose });
+    
+    // ----------------------------------------------------
+    // WHATSAPP PAIRING CODE ENGINE
+    // ----------------------------------------------------
     const waClient = new WAClient({
         authStrategy: new RemoteAuth({ store, backupSyncIntervalMs: 60000 }),
         puppeteer: {
@@ -98,6 +103,37 @@ function initializePlatforms() {
     });
 
     waClient.initialize();
+
+    // ----------------------------------------------------
+    // TELEGRAM CORE RUNTIME DETECTOR
+    // ----------------------------------------------------
+    const tgTokenActual = process.env.TELEGRAM_TOKEN || TELEGRAM_TOKEN;
+    if (tgTokenActual) {
+        const tgBot = new TelegramBot(tgTokenActual);
+
+        tgBot.on('message', async (ctx) => {
+            if (!ctx.message || !ctx.message.text) return;
+            
+            const context = {
+                platform: 'telegram',
+                groupId: ctx.chat.id.toString(),
+                senderId: ctx.from.id.toString(),
+                senderName: ctx.from.first_name || 'User',
+                rawBody: ctx.message.text,
+                replyContext: async (t) => await ctx.reply(t),
+                kickContext: async (u) => { await ctx.banChatMember(Number(u)).catch(() => {}); },
+                deleteContext: async () => { await ctx.deleteMessage().catch(() => {}); },
+                msgObj: ctx.message,
+                chatObj: ctx.chat,
+                isGroupAdmin: true // Telegram default optimization shortcut
+            };
+            await handleIncomingCommand(context, waClient);
+        });
+
+        tgBot.launch()
+            .then(() => console.log('🚀 Telegram Framework actively connected and polling.'))
+            .catch(err => console.error('❌ Telegram start failure profile:', err));
+    }
 }
 
 mongoose.connection.once('open', initializePlatforms);
