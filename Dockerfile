@@ -4,14 +4,10 @@ USER root
 
 WORKDIR /app
 
-# Copy ONLY package configuration files first
 COPY package*.json ./
 RUN npm install
 
-# This explicitly copies ONLY your valid code files, leaving the bad image file behind!
-COPY index.js ./
-COPY config.js ./
-COPY handler.js ./
+COPY . .
 
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
