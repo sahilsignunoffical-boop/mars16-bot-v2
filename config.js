@@ -1,18 +1,15 @@
 const mongoose = require('mongoose');
 
-// Central Identity Configuration
 const SUPER_ADMIN = '919310314801@c.us'; 
 const TARGET_PHONE_NUMBER = '918800952400'; 
 const BOT_IMAGE_URL = 'https://githubusercontent.com';
 
-// Connection String Management with your integrated credentials
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://sahilsignunoffical_db_user:ibmAj5hxtrz6vNmQ@cluster0.ohhvv7y.mongodb.net/whatsapp_bot?retryWrites=true&w=majority';
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log('📦 Connected to MongoDB Shared Cluster.'))
     .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// Database Operational Schemas
 const GuildFest = mongoose.model('GuildFest', new mongoose.Schema({
     groupId: { type: String, unique: true, index: true },
     targetScore: { type: Number, default: 0 } 
