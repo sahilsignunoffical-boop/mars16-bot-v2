@@ -63,8 +63,18 @@ async function handleIncomingCommand(context, waClient) {
     const args = commandString.split(/ +/);
     const command = args.shift().toLowerCase();
     if (command === 'help') {
-        const menu = `🌟 *WELCOME TO Mars_16 ❤️❤️❤️❤️❤️* \n\n🤖 *Group Bot — Commands*\n\n*🛠️ Utility*\n├→ *.ping* — Check online speed\n└→ *.trans [language] <text>* — Translation core\n\n*👥 Group Commands*\n├→ *.tagall* — Mass tag hidden layout\n├→ *.tags* — Bus run notification 🎫\n├→ *.tagadmin* — Summon administrative layers 🛡️\n├→ *.rules* — Show group rules\n├→ *.setrules <text>* — Define group guidelines (Admins)\n├→ *.antipromo on/off* — Lock URLs & stickers (Admins)\n├→ *.mute @member* — Auto-delete active feed (Admins)\n├→ *.unmute @member* — Restore permissions (Admins)\n├→ *.kick @member* — Dismiss player (Admins)\n└→ *.del* — Purge target feed message (Admins)\n\n*⏰ Reminders & Schedules*\n├→ *.remind 10m Task* / *.remind today 5pm Task*\n├→ *.remind tomorrow 9am Task* / *.remind 23/7/26 Task*\n├→ *.remind everyday 9am Alert* — Daily recurrence loop\n├→ *.schedule 5:50pm Message* — Group scheduler matrix\n└→ *.remindlist* / *.remindcancel <num>*\n\n*🛡️ Clan Defense Modules*\n├→ *.shield [duration]* — Log shield drops (e.g. \`.shield 8h\`)\n├→ *.shieldlist* — Review logged alliance bubbles\n├→ *.datime [india/china]* — Localized event clocks ⏰\n\n*🎮 Lords Mobile Features*\n├→ *.hunt* — Open Alphabetical Monster Counters Index\n└→ *.formation* — Tactical army ratios guide`;
-        return replyContext(menu);
+        const { MessageMedia } = require('whatsapp-web.js');
+        const { BOT_IMAGE_URL } = require('./config');
+        
+        const menuText = `🌟 *WELCOME TO Mars_16 ❤️❤️❤️❤️❤️* \n\n🤖 *Group Bot — Commands*\n\n*🛠️ Utility*\n├→ *.ping* — Check if the bot is online\n└→ *.trans [language] <text>* — Translate text (defaults to English)\n\n*👥 Group Commands*\n├→ *.tagall* — Tag all members (Admins only)\n├→ *.tags* — Tag all for a bus run 🎫\n├→ *.tagadmin* — Mention group admins 🛡️\n├→ *.rules* — Show group rules\n├→ *.setrules <text>* — Set group rules (Admins only)\n├→ *.antipromo on/off* — Auto-delete links & stickers (Admins only)\n├→ *.mute @member* — Auto-delete their messages (Admins only)\n├→ *.unmute @member* — Stop auto-delete (Admins only)\n├→ *.kick @member* — Kick member from group (Admins only)\n└→ *.del* — Delete a message (reply to it, Admins only)\n\n*⏰ Reminders & Schedules*\n├→ *.remind 10m Task* — Alert for 10 mins\n├→ *.remind today 5pm Task* — Reminder later today\n├→ *.remind tomorrow 9am Task* — Reminder tomorrow\n├→ *.remind everyday 9am Alert* — Daily recurring reminder\n├→ *.remind 23/7/26 Task* — Target calendar date tracker\n├→ *.schedule 5:50pm Message* — Daily group schedule\n├→ *.schedulelist* — View all active schedules\n├→ *.remindlist* — View your active tasks\n└→ *.remindcancel <num>* — Cancel task by number\n\n*🛡️ Clan Defense Modules*\n├→ *.shield [duration]* — Activate shield drops countdown (e.g. \`.shield 8h\`)\n├→ *.shieldlist* — Review current structural shield profiles\n├→ *.datime [india/china]* — Global game clocks ⏰\n\n*🎮 Lords Mobile Features*\n├→ *.hunt* — Pull Alphabetical Monster Counter Index Menu\n└→ *.formation* — Tactical ratios guide`;
+
+        if (platform === 'whatsapp') {
+            try {
+                const media = await MessageMedia.fromUrl(BOT_IMAGE_URL);
+                await chatObj.sendMessage(media, { caption: menuText });
+            } catch (err) { return replyContext(menuText); }
+        } else { return replyContext(menuText); }
+        return;
     }
 
     if (command === 'ping') {
@@ -123,16 +133,16 @@ async function handleIncomingCommand(context, waClient) {
         else return replyContext(txt);
         return;
     }
-
     if (command === 'gf') {
         if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin authorization required.");
-        const scoreTarget = parseInt(args[0]);
+        const scoreTarget = parseInt(args);
         if (isNaN(scoreTarget)) return replyContext("⚠️ Syntax: Use `.gf [score]` (e.g., `.gf 4000`)");
         await GuildFest.findOneAndUpdate({ groupId }, { targetScore: scoreTarget }, { upsert: true });
         return replyContext(`🏆 *Guild Fest Baseline Configured!* All members must hit a minimum of *${scoreTarget} points*.`);
     }
+
     if (command === 'shield') {
-        const inputDuration = args[0]?.toLowerCase();
+        const inputDuration = args?.toLowerCase();
         if (!inputDuration) return replyContext("⚠️ Syntax: Use `.shield [duration]` (e.g., `.shield 8h`)");
         let durationValue = parseInt(inputDuration);
         let timeUnit = 'hours';
@@ -145,26 +155,26 @@ async function handleIncomingCommand(context, waClient) {
         const warningBufferTime = calculatedExpiry.clone().subtract(15, 'minutes').toDate();
         const freshAlert = new Reminder({
             groupId, setterName: senderName, targetTime: warningBufferTime,
-            text: `⚠️ *CRITICAL PROFILE NOTIFICATION* \n@${senderId.split('@')[0]} Shield drops in 15 minutes! Refresh protection defenses!`,
+            text: `⚠️ *CRITICAL PROFILE NOTIFICATION* \n@${senderId.split('@')} Shield drops in 15 minutes! Refresh protection defenses!`,
             isRecurring: false, tagAllTrigger: true
         });
         await freshAlert.save();
-        return replyContext(`🛡️ *Shield Registration Confirmed!* \n\n⏳ *Duration:* ${durationValue} ${timeUnit}\n📅 *IST Expiration:* ${calculatedExpiry.format('DD/MM/YYYY hh:mm A')}`);
+        return replyContext(`🛡️ *Shield Registration Confirmed!* \n\n⏳ *Duration:* ${durationValue} ${timeUnit}\n📅 *IST Expiration Target:* ${calculatedExpiry.format('DD/MM/YYYY hh:mm A')}`);
     }
 
     if (command === 'mute') {
         if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin privileges required.");
-        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.[0];
+        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.;
         if (!target) return replyContext("⚠️ Mention a member or reply to mute them.");
-        let hours = parseFloat(args[0]) || 24;
+        let hours = parseFloat(args) || 24;
         let until = new Date(Date.now() + hours * 60 * 60 * 1000);
         await GroupConfig.findOneAndUpdate({ groupId }, { $push: { mutedUsers: { userId: target, mutedUntil: until } } }, { upsert: true });
-        return replyContext(`🔇 Muted user target cleanly for *${hours} hours*.`);
+        return replyContext(`🔇 Muted user cleanly for *${hours} hours*.`);
     }
 
     if (command === 'unmute') {
         if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin privileges required.");
-        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.[0];
+        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.;
         if (!target) return replyContext("⚠️ Mention a member.");
         await GroupConfig.findOneAndUpdate({ groupId }, { $pull: { mutedUsers: { userId: target } } });
         return replyContext(`🔊 Unmuted member successfully.`);
@@ -172,7 +182,7 @@ async function handleIncomingCommand(context, waClient) {
 
     if (command === 'kick') {
         if (!isGroupAdmin && !isSuperAdmin) return replyContext("❌ Admin authorization required.");
-        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.[0];
+        let target = msgObj.hasQuotedMsg ? (await msgObj.getQuotedMessage()).author : msgObj.mentionedIds?.;
         if (!target) return replyContext("⚠️ Target a user via mention or reply.");
         if (target.includes('919310314801')) return replyContext("🛡️ That user is immune.");
         await kickContext(target);
@@ -189,7 +199,7 @@ async function handleIncomingCommand(context, waClient) {
     }
 
     if (command === 'datime') {
-        const zone = args[0]?.toLowerCase();
+        const zone = args?.toLowerCase();
         const baseShowdownGMT = moment.tz("12:00", "HH:mm", "GMT");
         const baseArenaGMT = moment.tz("21:00", "HH:mm", "GMT");
         if (zone === 'china' || zone === 'cst') {
@@ -202,13 +212,13 @@ async function handleIncomingCommand(context, waClient) {
     }
 
     if (command === 'formation') {
-        return replyContext(`🛡️ *LORDS MOBILE STRATEGIC FORMATIONS GUIDE* \n\n• *Tactical Lineups (569 / 947 / 956 / 7 / 11 / 2)*:\n  ├→ Optimal for breaking specific frontlines.\n  └→ Ratio Balance: *50% T4 & 50% T5* or *60% to 40%* setups.\n\n• *Rally Formations*:\n  ├→ *Standard Push*: 60% T4 / 40% T5 balanced ratio.\n  ├→ *Heavy Frontline Wall*: 80% T4 and 20% T5 to absorb massive shocks.\n  └→ Keep layers optimized to prevent getting zeroed.`);
+        return replyContext(`🛡️ *LORDS MOBILE STRATEGIC FORMATIONS GUIDE* \n\n• *Tactical Lineups (569 / 947 / 956 / 7 / 11 / 2)*:\n  ├→ Optimal for breaking frontlines.\n  └→ Ratio Balance: *50% T4 & 50% T5* or *60% to 40%* setups.\n\n• *Rally Formations*:\n  ├→ *Standard Push*: 60% T4 / 40% T5 balanced ratio.\n  ├→ *Heavy Frontline Wall*: 80% T4 and 20% T5 to absorb massive shocks.\n  └→ Keep layers optimized to prevent getting zeroed.`);
     }
 
     if (command === 'hunt') {
-        const submenu = args[0]?.toLowerCase();
+        const submenu = args?.[0]?.toLowerCase();
         if (!submenu) {
-            return replyContext(`👾 *Lords Mobile Hunt Lineups Index* \nUse \`.hunt a\`, \`.hunt f\`, \`.hunt h\`, or \`.hunt n\` to view lists:\n\n✨ *[a]*: Bon Appétit, Arctic Flipper, Blackwing, Cottageroar\n✨ *[f]*: Frostwing, Gargantua, Gawrilla, Grim Reaper, Gryphon\n✨ *[h]*: Hardrox, Hell Drider, Jade Wyrm, Hootclaw, Mecha Trojan, Mega Maggot\n✨ *[n]*: Necrosis, Noceros, Queen Bee, Saberfang, Serpent Gladiator, Snow Beast, Terrorthorn, Tidal Titan, Voodoo Shaman`);
+            return replyContext(`👾 *Mars_16 Lords Mobile Hunt Lineups Index* \nUse \`.hunt a\`, \`.hunt f\`, \`.hunt h\`, or \`.hunt n\` to view target sets:\n\n✨ *[a]*: Bon Appétit, Arctic Flipper, Blackwing, Cottageroar\n✨ *[f]*: Frostwing, Gargantua, Gawrilla, Grim Reaper, Gryphon\n✨ *[h]*: Hardrox, Hell Drider, Jade Wyrm, Hootclaw, Mecha Trojan, Mega Maggot\n✨ *[n]*: Necrosis, Noceros, Queen Bee, Saberfang, Serpent Gladiator, Snow Beast, Terrorthorn, Tidal Titan, Voodoo Shaman`);
         }
         if (submenu === 'a') {
             return replyContext(`🍖 *BON APPÉTIT*:\n• Black Crow, Tracker, Scarlet Bolt, Trickster, Demon Slayer\n\n🐬 *Arctic Flipper*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🦅 *Blackwing*:\n• Demon Slayer, Scarlet Bolt, Tracker, Black Crow, Trickster\n\n🦁 *Cottageroar*:\n• Incinerator, Elementalist, Prima Donna, Sage of Storms, Bombin Goblin`);
