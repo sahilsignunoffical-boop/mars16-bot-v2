@@ -2,33 +2,33 @@ const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
+const QRCode = require('qrcode'); // Local image encoder module
 const handler = require('./handler');
 
-let latestQRData = '';
+let latestQRImageBase64 = '';
 
-// Create a local portal that renders a graphic image element on page load
+// Create a local portal that renders a native high-resolution image data string
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     
-    if (!latestQRData) {
+    if (!latestQRImageBase64) {
         res.end(`
             <div style="text-align:center; margin-top:50px; font-family:sans-serif;">
                 <h2>⏳ Waiting for WhatsApp Server Handshake...</h2>
-                <p>Please refresh this tab in 10-15 seconds to view your scannable QR Code.</p>
+                <p>Please refresh this tab in 5 seconds to view your scannable QR Code.</p>
+                <script>setTimeout(() => { location.reload(); }, 3000);</script>
             </div>
         `);
     } else {
-        // Embed the base data directly inside a clean, high-resolution Google Charts generator wrapper
-        const cleanQRImageURL = `https://googleapis.com{encodeURIComponent(latestQRData)}&choe=UTF-8`;
         res.end(`
             <div style="text-align:center; margin-top:40px; font-family:sans-serif;">
                 <h1 style="color:#128C7E;">🌟 Mars_16 Authorization Portal</h1>
                 <p style="font-size:16px; color:#555;">Scan this clean graphic using your phone's Linked Devices screen to go live!</p>
                 <div style="margin:20px; background:#fff; display:inline-block; padding:15px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.15);">
-                    <img src="${cleanQRImageURL}" alt="WhatsApp Sync QR" style="width:350px; height:350px;" />
+                    <img src="${latestQRImageBase64}" alt="WhatsApp Sync QR" style="width:350px; height:350px;" />
                 </div>
-                <p style="color:#888; font-size:12px;">The image refreshes automatically when updated.</p>
+                <p style="color:#888; font-size:12px;">This page will auto-refresh if the code updates.</p>
             </div>
         `);
     }
@@ -54,14 +54,18 @@ const client = new Client({
     }
 });
 
-// Cache the string internally to serve it onto the local web element route
-client.on('qr', (qr) => {
-    latestQRData = qr;
-    console.log('📶 A fresh synchronization code data layer has loaded into your Web Portal URL.');
+// Convert raw token data directly into a solid local Base64 Image layout element
+client.on('qr', async (qr) => {
+    try {
+        latestQRImageBase64 = await QRCode.toDataURL(qr, { width: 350, margin: 2 });
+        console.log('📶 A fresh synchronization graphic has loaded natively into your Web Portal URL.');
+    } catch (err) {
+        console.error('QR image generation error:', err);
+    }
 });
 
 client.on('ready', () => {
-    latestQRData = ''; // Clear out the portal token once authenticated successfully
+    latestQRImageBase64 = ''; // Clear token view upon connection completion
     console.log('✅ Mars_16 Bot is successfully synchronized and ready!');
 });
 
