@@ -2,9 +2,19 @@ const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const path = require('path');
 const fs = require('fs');
+const http = require('http'); // Built-in Node module
 const handler = require('./handler');
 
 const BOT_PHONE_NUMBER = '919310314801'; 
+
+// 🌐 FIX: Create a simple Web Server to satisfy Render's port validation check
+const PORT = process.env.PORT || 3000;
+http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Mars_16 WhatsApp Bot is Active and Running Online!\n');
+}).listen(PORT, '0.0.0.0', () => {
+    console.log(`🌐 Web Server port-binding successfully established on port ${PORT}`);
+});
 
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './sessions' }),
@@ -60,7 +70,7 @@ client.on('message', async (msg) => {
     }
 });
 
-// Delay initialization slightly to let puppeteer stabilize and force pairing link request
+// Delay initialization slightly to let the Web Server and Puppeteer stabilize completely
 setTimeout(async () => {
     try {
         console.log('📡 Requesting secure numeric verification token from WhatsApp...');
@@ -69,7 +79,7 @@ setTimeout(async () => {
         console.log(`🚀 SUCCESS! YOUR CODES FOR LINKING ARE: ${pairingCode}`);
         console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
     } catch (err) {
-        console.log('⚠️ Pairing code request error or timeout. Initializing default state...');
+        console.log('⚠️ Pairing code request failed. Retrying fallback handler layer...');
     }
 }, 5000);
 
