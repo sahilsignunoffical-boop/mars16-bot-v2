@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const QRCode = require('qrcode');
-const { mongoose } = require('./config'); // 🌐 FIX: Forces bot to stabilize database paths before processing incoming messages
+const { mongoose } = require('./config');
 const handler = require('./handler');
 
 let latestQRImageBase64 = '';
@@ -26,6 +26,7 @@ http.createServer((req, res) => {
                 <div style="margin:20px; background:#fff; display:inline-block; padding:15px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.15);">
                     <img src="${latestQRImageBase64}" alt="WhatsApp Sync QR" style="width:350px; height:350px;" />
                 </div>
+                <p style="color:#e74c3c; font-weight:bold; font-size:14px;">⏳ This QR code is stabilized and locked for 5 minutes!</p>
             </div>
         `);
     }
@@ -35,6 +36,8 @@ http.createServer((req, res) => {
 
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './sessions' }),
+    qrTimeoutMs: 300000, // 🔄 EXTENDED LIFECYCLE: Gives you 5 full minutes to scan before expiration [1]
+    authTimeoutMs: 300000, // Extends authentication confirmation time [1]
     puppeteer: {
         headless: true,
         executablePath: '/usr/bin/google-chrome-stable',
@@ -54,6 +57,7 @@ const client = new Client({
 client.on('qr', async (qr) => {
     try {
         latestQRImageBase64 = await QRCode.toDataURL(qr, { width: 350, margin: 2 });
+        console.log('📶 Fresh scannable graphic loaded into your Web Portal.');
     } catch (err) {
         console.error('QR error:', err);
     }
