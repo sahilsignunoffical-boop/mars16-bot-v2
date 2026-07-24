@@ -25,10 +25,14 @@ module.exports = async (client, msgObj) => {
     let isSuperAdmin = (senderId === SUPER_ADMIN || senderId.includes('919310314801'));
 
     if (isGroup) {
-        const chat = await msgObj.getChat();
-        const participant = chat.participants.find(p => p.id._serialized === senderId);
-        if (participant && (participant.isAdmin || participant.isSuperAdmin)) {
-            isGroupAdmin = true;
+        try {
+            const chat = await msgObj.getChat();
+            const participant = chat.participants.find(p => p.id._serialized === senderId);
+            if (participant && (participant.isAdmin || participant.isSuperAdmin)) {
+                isGroupAdmin = true;
+            }
+        } catch (e) {
+            // Safe fallback if participant array loading experiences network latency
         }
     }
 
@@ -56,13 +60,11 @@ module.exports = async (client, msgObj) => {
     const args = body.slice(1).trim().split(/ +/);
     const command = args.shift().toLowerCase();
 
-    // --- FUNCTIONAL COMMAND CORE ---
+    // --- CORE COMMAND CONTROL ENGINE ---
 
     if (command === 'ping') {
         return replyContext('🤖 Mars_16 Bot is online and operational!');
-    }
-
-    if (command === 'help' || command === 'menu') {
+    } if (command === 'help' || command === 'menu') {
         const helpMenuText = `🌟 *WELCOME TO Mars_16* ❤️❤️❤️❤️❤️\n\n🤖 *Group Bot — Commands*\n\n*🛠️ Utility*\n├→ *.ping* — Check if the bot is online\n└→ *.trans [lang] <text>* — Translate text (e.g. .trans hindi)\n\n*👥 Group Commands*\n├→ *.tagall <msg>* — Tag members under Read More (Admins Only)\n├→ *.add <number>* — Add member (Admins Only)\n├→ *.kick @member* — Kick member (Admins Only)\n├→ *.antipromo on/off* — Toggles link removal (Admins Only)\n├→ *.del* — Delete target message (reply to target)\n\n*⚔️ Game Configurations*\n├→ *.camp [569/947/956]* — Troop distribution balance arrays\n└→ *.hunt <number/name>* — Graphic monster hero layouts\n\n*⏰ Schedule Reminders*\n├→ *.remind 10m Task* — Set task in minutes\n└→ *.remind tomorrow 9am Task* — Set future targets`;
         
         try {
@@ -156,11 +158,9 @@ module.exports = async (client, msgObj) => {
             return replyContext(`⚔️ *MARS_16 FORMATION DIRECTIVE (956)* ⚔️\n\n• *Deployment Ratios:* Heavy Frontline Wall Setup.\n\n• *Exact Troop Counts:*\n  ├→ Infantry: T5: *50,000* | T4: *80,000*\n  ├→ Ranged: T5: *20,000* | T4: *20,000*\n  └→ Cavalry: T5: *30,000* | T4: *30,000*`);
         }
         return replyContext('⚠️ Syntax: `.camp 569`, `.camp 947`, or `.camp 956`');
-    }
-
-    // --- 🎮 MULTIMEDIA MONSTER HUNT COUNTERS SYSTEM ---
+    }// --- 🎮 MULTIMEDIA MONSTER HUNT COUNTERS SYSTEM ---
     if (command === 'hunt') {
-        const indexList = `👾 *Mars_16 Universal Monster Hunting Directory* 👾\n\n1. Bon Appétit\n2. Arctic Flipper\n3. Blackwing\n4. Frostwing\n5. Gargantua\n6. Gawrilla\n7. Grim Reaper\n8. Gryphon\n9. Hardrox\n10. Hell Drider\n11. Jade Wyrm\n12. Hootclaw\n13. Mecha Trojan\n14. Mega Maggot\n15. Necrosis\n16. Noceros\n17. Queen Bee\n18. Saberfang\n19. Serpent Gladiator\n20. Snow Beast\n21. Terrorthorn\n22. Tidal Titan\n23. Voodoo Shaman\n24. Cottageroar\n\n👉 *Query Syntax:* Type \subsection{1} \`.hunt <number>\` or \`.hunt <name>\``;
+        const indexList = `👾 *Mars_16 Universal Monster Hunting Directory* 👾\n\n1. Bon Appétit\n2. Arctic Flipper\n3. Blackwing\n4. Frostwing\n5. Gargantua\n6. Gawrilla\n7. Grim Reaper\n8. Gryphon\n9. Hardrox\n10. Hell Drider\n11. Jade Wyrm\n12. Hootclaw\n13. Mecha Trojan\n14. Mega Maggot\n15. Necrosis\n16. Noceros\n17. Queen Bee\n18. Saberfang\n19. Serpent Gladiator\n20. Snow Beast\n21. Terrorthorn\n22. Tidal Titan\n23. Voodoo Shaman\n24. Cottageroar\n\n👉 *Query Syntax:* Type \`.hunt <number>\` or \`.hunt <name>\``;
         
         const query = args.join(' ').toLowerCase().trim();
         if (!query) return replyContext(indexList);
@@ -220,9 +220,7 @@ module.exports = async (client, msgObj) => {
             }
         }
         return replyContext("❌ Monster layout profile entry not found within directory range.");
-    }
-
-    // --- TIMELINE REMINDER CONTEXT EXTRACTOR (IST) ---
+    }// --- TIMELINE REMINDER CONTEXT EXTRACTOR (IST) ---
     if (command === 'remind' || command === 'schedule') {
         try {
             let fullInput = args.join(' ');
