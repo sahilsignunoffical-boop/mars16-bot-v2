@@ -1,24 +1,19 @@
 const mongoose = require('mongoose');
 
-// Central Identity Configuration
-const SUPER_ADMIN = '919310314801@c.us'; 
-const TARGET_PHONE_NUMBER = '918800952400'; 
-
 // Points directly to the bot_dp.jpg image asset uploaded inside your repository
 const BOT_IMAGE_URL = 'https://githubusercontent.com';
 
 // Core Connection Management String Linked directly to your active Mongo Cluster Profile
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://sahilsignunoffical_db_user:ibmAj5hxtrz6vNmQ@cluster0.ohhvv7y.mongodb.net/whatsapp_bot?retryWrites=true&w=majority';
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || '8770167093:AAGoBPUTJRD4cFMFnxf4dIFj-3I4a157eBw';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://sahilsignunoffical_db_user:ibwAj5hxtrz6VNwQ@cluster0.ohwvu7y.mongodb.net/mars16?retryWrites=true&w=majority';
 
 mongoose.connect(MONGO_URI)
-    .then(() => console.log('📦 Connected to MongoDB Shared Cluster.'))
+    .then(() => console.log('✅ Connected to MongoDB Shared Cluster.'))
     .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 // Database Operational Schemas Definitions
 const GuildFest = mongoose.model('GuildFest', new mongoose.Schema({
     groupId: { type: String, unique: true, index: true },
-    targetScore: { type: Number, default: 0 } 
+    targetScore: { type: Number, default: 0 }
 }));
 
 const ShieldTracker = mongoose.model('ShieldTracker', new mongoose.Schema({
@@ -28,60 +23,13 @@ const ShieldTracker = mongoose.model('ShieldTracker', new mongoose.Schema({
     expiryTime: Date
 }));
 
-const GroupConfig = mongoose.model('GroupConfig', new mongoose.Schema({
-    groupId: { type: String, unique: true, index: true },
-    rules: { type: String, default: "No rules set yet. Use .setrules to define them." },
-    antiPromo: { type: Boolean, default: false },
-    antiSticker: { type: Boolean, default: false },
-    abuseDetect: { type: Boolean, default: false },
-    mutedUsers: [{ userId: String, mutedUntil: Date }]
-}));
-
-const Strike = mongoose.model('Strike', new mongoose.Schema({
-    groupId: { type: String, index: true },
-    userId: { type: String, index: true },
-    strikes: { type: Number, default: 0 }
-}));
-
+// Add this Reminder database schema layout right here:
 const Reminder = mongoose.model('Reminder', new mongoose.Schema({
     groupId: { type: String, index: true },
-    setterName: String,
+    setterId: String,
     targetTime: Date,
-    text: String,
-    isRecurring: { type: Boolean, default: false },
-    tagAllTrigger: { type: Boolean, default: false }
+    text: String
 }));
 
-let configCache = new Map();
-let floodTracker = new Map(); 
-
-// Multi-language Profanity Abuse Filter Registry Base
-const abuseBlacklist = [
-    'chutiya', 'bhenchod', 'gandu', 'madarchod', 'laundu', 'harami', 'bsdk', 'saala',
-    'abuse1', 'abuse2', 'badword', 'bastard', 'scam', 'puta', 'caonima', 'shabi'
-];
-
-function getGroupCache(groupId) {
-    if (!configCache.has(groupId)) {
-        const fresh = { rules: "No rules set yet.", antiPromo: false, antiSticker: false, abuseDetect: false, mutedUsers: [] };
-        configCache.set(groupId, fresh);
-        GroupConfig.create({ groupId }).catch(() => {});
-        return fresh;
-    }
-    return configCache.get(groupId);
-}
-
-module.exports = {
-    SUPER_ADMIN,
-    TARGET_PHONE_NUMBER,
-    BOT_IMAGE_URL,
-    TELEGRAM_TOKEN,
-    GroupConfig,
-    Strike,
-    Reminder,
-    GuildFest,
-    ShieldTracker,
-    floodTracker,
-    abuseBlacklist,
-    getGroupCache
-};
+// Export the operational configuration schemas
+module.exports = { mongoose, GuildFest, ShieldTracker, Reminder };
