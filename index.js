@@ -4,22 +4,19 @@ const path = require('path');
 const fs = require('fs');
 const handler = require('./handler');
 
-// Dynamically locate the downloaded Chrome browser inside Render's cache folder
-let puppeteerPath = '';
-const baseCachePath = '/opt/render/.cache/puppeteer/chrome';
-if (fs.existsSync(baseCachePath)) {
-    const versions = fs.readdirSync(baseCachePath);
-    if (versions.length > 0) {
-        puppeteerPath = `${baseCachePath}/${versions[0]}/chrome-linux64/chrome`;
-    }
-}
+// ⚠️ CHANGE THIS: Put your bot's phone number with country code (no + or spaces)
+const BOT_PHONE_NUMBER = '919310314801'; 
 
-// Initialize client pointing directly to Render's local puppeteer Chrome binary path
+// Initialize client pointing directly to the stable Docker system path
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './sessions' }),
+    pairWithPhoneNumber: {
+        phoneNumber: BOT_PHONE_NUMBER,
+        showNotification: true
+    },
     puppeteer: {
         headless: true,
-        executablePath: puppeteerPath || undefined,
+        executablePath: '/usr/bin/google-chrome-stable',
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -33,10 +30,16 @@ const client = new Client({
     }
 });
 
-// Logs the connection QR code inside Render dashboards
+// Capture and display the clean 8-character pairing code in Render logs
+client.on('pairing_code', (code) => {
+    console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
+    console.log(`🚀 WHATSAPP PAIRING CODE GENERATED: ${code}`);
+    console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
+});
+
+// Fallback QR code listener
 client.on('qr', (qr) => {
-    console.log('👇 SCAN THIS QR CODE WITH YOUR WHATSAPP LINKED DEVICES 👇');
-    qrcode.generate(qr, { small: true });
+    console.log('Fallback QR generated.');
 });
 
 client.on('ready', () => {
