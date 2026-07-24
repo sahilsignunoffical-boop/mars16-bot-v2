@@ -1,5 +1,4 @@
 {
-  {
   "name": "mars16-whatsapp-bot",
   "version": "1.0.0",
   "description": "Pure WhatsApp Bot optimized for Render Deployment",
@@ -15,7 +14,5 @@
     "bad-words": "^3.0.4",
     "mongoose": "^8.0.0",
     "qrcode": "^1.5.3"
-  }
-}
   }
 }
