@@ -5,8 +5,7 @@ const fs = require('fs');
 const http = require('http');
 const handler = require('./handler');
 
-const BOT_PHONE_NUMBER = '919310314801'; 
-
+// Keep port server running so Render keeps the network lines completely open
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -33,15 +32,11 @@ const client = new Client({
     }
 });
 
-// 📱 FIX: Explicitly listen for WhatsApp's internal engine challenge handshake
-client.on('pairing_code', (code) => {
-    console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
-    console.log(`🚀 SUCCESS! YOUR CODE FOR LINKING IS: ${code}`);
-    console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
-});
-
+// 📱 FIX: Generate a small, crisp, scannable text QR code layout block
 client.on('qr', (qr) => {
-    console.log('Fallback QR generated.');
+    console.log('\n👇 SCAN THIS LIGHTWEIGHT QR CODE WITH LINKED DEVICES 👇\n');
+    qrcode.generate(qr, { small: true });
+    console.log('\n💡 Tip: Zoom out your browser slightly if the lines look disconnected!\n');
 });
 
 client.on('ready', () => {
@@ -52,7 +47,7 @@ client.on('group_join', async (notification) => {
     try {
         const chat = await notification.getChat();
         const participantId = notification.recipientIds;
-        let welcomeText = `🌟 *WELCOME TO Mars_16* ❤️❤️❤️\n\n✨ Hello @${participantId.split('@')[0]}, welcome to the family!\n\n🤖 Type \`.help\` to see our strategic custom gaming control panels.`;
+        let welcomeText = `🌟 *WELCOME TO Mars_16* ❤️❤️❤️\n\n✨ Hello @${participantId.split('@')}, welcome to the family!\n\n🤖 Type \`.help\` to see our strategic custom gaming control panels.`;
         const mediaPath = path.join(__dirname, 'mars_welcome.jpg');
         const media = MessageMedia.fromFilePath(mediaPath);
         await client.sendMessage(chat.id._serialized, media, { caption: welcomeText, mentions: [participantId] });
@@ -69,12 +64,4 @@ client.on('message', async (msg) => {
     }
 });
 
-// Force request pairing code safely right after client initialization starts
-client.initialize().then(async () => {
-    try {
-        console.log('📡 Requesting numeric code for verification from WhatsApp...');
-        const code = await client.requestPairingCode(BOT_PHONE_NUMBER);
-    } catch (err) {
-        console.log('⚠️ Pairing retrieval event error loop catch.');
-    }
-});
+client.initialize();
