@@ -23,7 +23,6 @@ const ShieldTracker = mongoose.model('ShieldTracker', new mongoose.Schema({
     expiryTime: Date
 }));
 
-// Add this Reminder database schema layout right here:
 const Reminder = mongoose.model('Reminder', new mongoose.Schema({
     groupId: { type: String, index: true },
     setterId: String,
