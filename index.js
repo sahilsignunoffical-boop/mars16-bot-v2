@@ -4,12 +4,36 @@ const fs = require('fs');
 const http = require('http');
 const handler = require('./handler');
 
+let latestQRData = '';
+
+// Create a local portal that renders a graphic image element on page load
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Mars_16 WhatsApp Bot is Active and Running Online!\n');
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    
+    if (!latestQRData) {
+        res.end(`
+            <div style="text-align:center; margin-top:50px; font-family:sans-serif;">
+                <h2>⏳ Waiting for WhatsApp Server Handshake...</h2>
+                <p>Please refresh this tab in 10-15 seconds to view your scannable QR Code.</p>
+            </div>
+        `);
+    } else {
+        // Embed the base data directly inside a clean, high-resolution Google Charts generator wrapper
+        const cleanQRImageURL = `https://googleapis.com{encodeURIComponent(latestQRData)}&choe=UTF-8`;
+        res.end(`
+            <div style="text-align:center; margin-top:40px; font-family:sans-serif;">
+                <h1 style="color:#128C7E;">🌟 Mars_16 Authorization Portal</h1>
+                <p style="font-size:16px; color:#555;">Scan this clean graphic using your phone's Linked Devices screen to go live!</p>
+                <div style="margin:20px; background:#fff; display:inline-block; padding:15px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.15);">
+                    <img src="${cleanQRImageURL}" alt="WhatsApp Sync QR" style="width:350px; height:350px;" />
+                </div>
+                <p style="color:#888; font-size:12px;">The image refreshes automatically when updated.</p>
+            </div>
+        `);
+    }
 }).listen(PORT, '0.0.0.0', () => {
-    console.log(`🌐 Web Server port-binding successfully established on port ${PORT}`);
+    console.log(`🌐 Local Web Portal securely established on port ${PORT}`);
 });
 
 const client = new Client({
@@ -30,18 +54,14 @@ const client = new Client({
     }
 });
 
-// 📱 FIX: Bypasses the broken terminal blocks and generates an instant clickable link
+// Cache the string internally to serve it onto the local web element route
 client.on('qr', (qr) => {
-    const encodedQR = encodeURIComponent(qr);
-    const cleanQRLink = `https://qrserver.com{encodedQR}`;
-    
-    console.log('\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
-    console.log('🚀 CLICK THE LINK BELOW TO OPEN A CLEAN, SCANNABLE QR CODE:');
-    console.log(cleanQRLink);
-    console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n');
+    latestQRData = qr;
+    console.log('📶 A fresh synchronization code data layer has loaded into your Web Portal URL.');
 });
 
 client.on('ready', () => {
+    latestQRData = ''; // Clear out the portal token once authenticated successfully
     console.log('✅ Mars_16 Bot is successfully synchronized and ready!');
 });
 
