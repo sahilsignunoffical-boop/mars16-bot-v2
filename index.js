@@ -36,8 +36,8 @@ http.createServer((req, res) => {
 
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './sessions' }),
-    qrTimeoutMs: 300000, // 🔄 EXTENDED LIFECYCLE: Gives you 5 full minutes to scan before expiration [1]
-    authTimeoutMs: 300000, // Extends authentication confirmation time [1]
+    qrTimeoutMs: 300000, 
+    authTimeoutMs: 300000, 
     puppeteer: {
         headless: true,
         executablePath: '/usr/bin/google-chrome-stable',
@@ -68,7 +68,21 @@ client.on('ready', () => {
     console.log('✅ Mars_16 Bot is successfully synchronized and ready!');
 });
 
-client.on('message', async (msg) => {
+client.on('group_join', async (notification) => {
+    try {
+        const chat = await notification.getChat();
+        const participantId = notification.recipientIds;
+        let welcomeText = `🌟 *WELCOME TO Mars_16* ❤️❤️❤️\n\n✨ Hello @${participantId.split('@')[0]}, welcome to the family!\n\n🤖 Type \`.help\` to see our strategic custom gaming control panels.`;
+        const mediaPath = path.join(__dirname, 'mars_welcome.jpg');
+        const media = MessageMedia.fromFilePath(mediaPath);
+        await client.sendMessage(chat.id._serialized, media, { caption: welcomeText, mentions: [participantId] });
+    } catch (e) {
+        console.log('Welcome delivery fallback triggered.');
+    }
+});
+
+// ⚡ CORE UPGRADE: Listens to all created messages, enabling responses to self-sent commands
+client.on('message_create', async (msg) => {
     try {
         await handler(client, msg);
     } catch (err) {
