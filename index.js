@@ -1,11 +1,9 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const handler = require('./handler');
 
-// Keep port server running so Render keeps the network lines completely open
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -32,11 +30,15 @@ const client = new Client({
     }
 });
 
-// 📱 FIX: Generate a small, crisp, scannable text QR code layout block
+// 📱 FIX: Bypasses the broken terminal blocks and generates an instant clickable link
 client.on('qr', (qr) => {
-    console.log('\n👇 SCAN THIS LIGHTWEIGHT QR CODE WITH LINKED DEVICES 👇\n');
-    qrcode.generate(qr, { small: true });
-    console.log('\n💡 Tip: Zoom out your browser slightly if the lines look disconnected!\n');
+    const encodedQR = encodeURIComponent(qr);
+    const cleanQRLink = `https://qrserver.com{encodedQR}`;
+    
+    console.log('\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
+    console.log('🚀 CLICK THE LINK BELOW TO OPEN A CLEAN, SCANNABLE QR CODE:');
+    console.log(cleanQRLink);
+    console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n');
 });
 
 client.on('ready', () => {
