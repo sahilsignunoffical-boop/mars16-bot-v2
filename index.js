@@ -2,12 +2,11 @@ const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const path = require('path');
 const fs = require('fs');
-const http = require('http'); // Built-in Node module
+const http = require('http');
 const handler = require('./handler');
 
 const BOT_PHONE_NUMBER = '919310314801'; 
 
-// 🌐 FIX: Create a simple Web Server to satisfy Render's port validation check
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -34,10 +33,10 @@ const client = new Client({
     }
 });
 
-// Capture and display the clean 8-character pairing code in Render logs
+// 📱 FIX: Explicitly listen for WhatsApp's internal engine challenge handshake
 client.on('pairing_code', (code) => {
     console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
-    console.log(`🚀 WHATSAPP PAIRING CODE GENERATED: ${code}`);
+    console.log(`🚀 SUCCESS! YOUR CODE FOR LINKING IS: ${code}`);
     console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
 });
 
@@ -70,17 +69,12 @@ client.on('message', async (msg) => {
     }
 });
 
-// Delay initialization slightly to let the Web Server and Puppeteer stabilize completely
-setTimeout(async () => {
+// Force request pairing code safely right after client initialization starts
+client.initialize().then(async () => {
     try {
-        console.log('📡 Requesting secure numeric verification token from WhatsApp...');
-        const pairingCode = await client.requestPairingCode(BOT_PHONE_NUMBER);
-        console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
-        console.log(`🚀 SUCCESS! YOUR CODES FOR LINKING ARE: ${pairingCode}`);
-        console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
+        console.log('📡 Requesting numeric code for verification from WhatsApp...');
+        const code = await client.requestPairingCode(BOT_PHONE_NUMBER);
     } catch (err) {
-        console.log('⚠️ Pairing code request failed. Retrying fallback handler layer...');
+        console.log('⚠️ Pairing retrieval event error loop catch.');
     }
-}, 5000);
-
-client.initialize();
+});
