@@ -1,66 +1,4 @@
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
-const path = require('path');
-const handler = require('./handler');
-
-// Initialize client with custom headless flags to bypass sandbox blocks on Render
-const client = new Client({
-    authStrategy: new LocalAuth({ dataPath: './sessions' }),
-    puppeteer: {
-        headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process',
-            '--disable-gpu'
-        ],
-    }
-});
-
-// Logs the connection QR code inside Render dashboards
-client.on('qr', (qr) => {
-    console.log('👇 SCAN THIS QR CODE WITH YOUR WHATSAPP LINKED DEVICES 👇');
-    qrcode.generate(qr, { small: true });
-});
-
-client.on('ready', () => {
-    console.log('✅ Mars_16 Bot is successfully synchronized and ready!');
-});
-
-// Automated Welcome Profile Notification Logic using your custom anime banner image
-client.on('group_join', async (notification) => {
-    try {
-        const chat = await notification.getChat();
-        const participantId = notification.recipientIds[0];
-        
-        let welcomeText = `🌟 *WELCOME TO Mars_16* ❤️❤️❤️\n\n✨ Hello @${participantId.split('@')[0]}, welcome to the family!\n\n🤖 Type \`.help\` to see our strategic custom gaming control panels.`;
-
-        const mediaPath = path.join(__dirname, 'mars_welcome.jpg');
-        const media = MessageMedia.fromFilePath(mediaPath);
-
-        await client.sendMessage(chat.id._serialized, media, { 
-            caption: welcomeText, 
-            mentions: [participantId] 
-        });
-    } catch (e) {
-        console.log('Welcome delivery fallback triggered.');
-    }
-});
-
-// Route messaging events to handler processing pipeline
-client.on('message', async (msg) => {
-    try {
-        await handler(client, msg);
-    } catch (err) {
-        console.error('Core routing breakdown error:', err);
-    }
-});
-
-client.initialize();
+const { Reminder, ShieldTracker } = require('./config');
 const moment = require('moment-timezone');
 const { translate } = require('@vitalets/google-translate-api');
 const { MessageMedia } = require('whatsapp-web.js');
@@ -222,7 +160,7 @@ module.exports = async (client, msgObj) => {
 
     // --- 🎮 MULTIMEDIA MONSTER HUNT COUNTERS SYSTEM ---
     if (command === 'hunt') {
-        const indexList = `👾 *Mars_16 Universal Monster Hunting Directory* 👾\n\n1. Bon Appétit\n2. Arctic Flipper\n3. Blackwing\n4. Frostwing\n5. Gargantua\n6. Gawrilla\n7. Grim Reaper\n8. Gryphon\n9. Hardrox\n10. Hell Drider\n11. Jade Wyrm\n12. Hootclaw\n13. Mecha Trojan\n14. Mega Maggot\n15. Necrosis\n16. Noceros\n17. Queen Bee\n18. Saberfang\n19. Serpent Gladiator\n20. Snow Beast\n21. Terrorthorn\n22. Tidal Titan\n23. Voodoo Shaman\n24. Cottageroar\n\n👉 *Query Syntax:* Type \`.hunt <number>\` or \`.hunt <name>\``;
+        const indexList = `👾 *Mars_16 Universal Monster Hunting Directory* 👾\n\n1. Bon Appétit\n2. Arctic Flipper\n3. Blackwing\n4. Frostwing\n5. Gargantua\n6. Gawrilla\n7. Grim Reaper\n8. Gryphon\n9. Hardrox\n10. Hell Drider\n11. Jade Wyrm\n12. Hootclaw\n13. Mecha Trojan\n14. Mega Maggot\n15. Necrosis\n16. Noceros\n17. Queen Bee\n18. Saberfang\n19. Serpent Gladiator\n20. Snow Beast\n21. Terrorthorn\n22. Tidal Titan\n23. Voodoo Shaman\n24. Cottageroar\n\n👉 *Query Syntax:* Type \subsection{1} \`.hunt <number>\` or \`.hunt <name>\``;
         
         const query = args.join(' ').toLowerCase().trim();
         if (!query) return replyContext(indexList);
@@ -291,61 +229,71 @@ module.exports = async (client, msgObj) => {
             let targetTime = null;
             let referenceIST = moment.tz("Asia/Kolkata");
 
-            // Format A: ".remind 10m Task"
             if (/^\d+m\s/i.test(fullInput)) {
                 const match = fullInput.match(/^(\d+)m/i);
-                const mins = parseInt(match[1]);
-                targetTime = referenceIST.clone().add(mins, 'minutes').toDate();
-                fullInput = fullInput.replace(/^\d+m\s+/i, '');
+                if (match) {
+                    const mins = parseInt(match[1]);
+                    targetTime = referenceIST.clone().add(mins, 'minutes').toDate();
+                    fullInput = fullInput.replace(/^\d+m\s+/i, '');
+                }
             } 
-            // Format B: ".remind today 5pm Task" or ".remind 11pm Task"
             else if (/^(today\s+)?(\d+)(am|pm)/i.test(fullInput)) {
                 const match = fullInput.match(/^(today\s+)?(\d+)(am|pm)/i);
-                let hr = parseInt(match[2]);
-                const ampm = match[3].toLowerCase();
-                if (ampm === 'pm' && hr < 12) hr += 12;
-                if (ampm === 'am' && hr === 12) hr = 0;
-                targetTime = referenceIST.clone().hour(hr).minute(0).second(0).toDate();
-                fullInput = fullInput.replace(/^(today\s+)?\d+(am|pm)\s+/i, '');
+                if (match) {
+                    let hr = parseInt(match[2]);
+                    const ampm = match[3].toLowerCase();
+                    if (ampm === 'pm' && hr < 12) hr += 12;
+                    if (ampm === 'am' && hr === 12) hr = 0;
+                    targetTime = referenceIST.clone().hour(hr).minute(0).second(0).toDate();
+                    fullInput = fullInput.replace(/^(today\s+)?\d+(am|pm)\s+/i, '');
+                }
             }
-            // Format C: ".remind tomorrow 9am Task"
             else if (/^tomorrow\s+(\d+)(am|pm)/i.test(fullInput)) {
                 const match = fullInput.match(/^tomorrow\s+(\d+)(am|pm)/i);
-                let hr = parseInt(match[1]);
-                const ampm = match[2].toLowerCase();
-                if (ampm === 'pm' && hr < 12) hr += 12;
-                if (ampm === 'am' && hr === 12) hr = 0;
-                targetTime = referenceIST.clone().add(1, 'day').hour(hr).minute(0).second(0).toDate();
-                fullInput = fullInput.replace(/^tomorrow\s+\d+(am|pm)\s+/i, '');
+                if (match) {
+                    let hr = parseInt(match[1]);
+                    const ampm = match[2].toLowerCase();
+                    if (ampm === 'pm' && hr < 12) hr += 12;
+                    if (ampm === 'am' && hr === 12) hr = 0;
+                    targetTime = referenceIST.clone().add(1, 'day').hour(hr).minute(0).second(0).toDate();
+                    fullInput = fullInput.replace(/^tomorrow\s+\d+(am|pm)\s+/i, '');
+                }
             }
-            // Format D: ".remind monday 3pm Task"
             else if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+(\d+)(am|pm)/i.test(fullInput)) {
                 const match = fullInput.match(/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+(\d+)(am|pm)/i);
-                const dayName = match[1].toLowerCase();
-                let hr = parseInt(match[2]);
-                const ampm = match[3].toLowerCase();
-                if (ampm === 'pm' && hr < 12) hr += 12;
-                if (ampm === 'am' && hr === 12) hr = 0;
-                
-                targetTime = referenceIST.clone().day(dayName);
-                if (targetTime.isBefore(referenceIST)) targetTime.add(7, 'days');
-                targetTime = targetTime.hour(hr).minute(0).second(0).toDate();
-                fullInput = fullInput.replace(/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+\d+(am|pm)\s+/i, '');
+                if (match) {
+                    const dayName = match[1].toLowerCase();
+                    let hr = parseInt(match[2]);
+                    const ampm = match[3].toLowerCase();
+                    if (ampm === 'pm' && hr < 12) hr += 12;
+                    if (ampm === 'am' && hr === 12) hr = 0;
+                    
+                    targetTime = referenceIST.clone().day(dayName);
+                    if (targetTime.isBefore(referenceIST)) targetTime.add(7, 'days');
+                    targetTime = targetTime.hour(hr).minute(0).second(0).toDate();
+                    fullInput = fullInput.replace(/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+\d+(am|pm)\s+/i, '');
+                }
             }
-            // Format E: ".remind 28/07/2026 4pm Task"
             else if (/^(\d{2}\/\d{2}\/\d{4})\s+(\d+)(am|pm)/i.test(fullInput)) {
                 const match = fullInput.match(/^(\d{2}\/\d{2}\/\d{4})\s+(\d+)(am|pm)/i);
-                const dateStr = match[1];
-                let hr = parseInt(match[2]);
-                const ampm = match[3].toLowerCase();
-                if (ampm === 'pm' && hr < 12) hr += 12;
-                if (ampm === 'am' && hr === 12) hr = 0;
+                if (match) {
+                    const dateStr = match[1];
+                    let hr = parseInt(match[2]);
+                    const ampm = match[3].toLowerCase();
+                    if (ampm === 'pm' && hr < 12) hr += 12;
+                    if (ampm === 'am' && hr === 12) hr = 0;
 
-                targetTime = moment.tz(dateStr, "DD/MM/YYYY", "Asia/Kolkata").hour(hr).minute(0).second(0).toDate();
-                fullInput = fullInput.replace(/^\d{2}\/\d{2}\/\d{4}\s+\d+(am|pm)\s+/i, '');
+                    targetTime = moment.tz(dateStr, "DD/MM/YYYY", "Asia/Kolkata").hour(hr).minute(0).second(0).toDate();
+                    fullInput = fullInput.replace(/^\d{2}\/\d{2}\/\d{4}\s+\d+(am|pm)\s+/i, '');
+                }
             }
 
             if (!targetTime) return replyContext("⚠️ Syntax examples:\n• `.remind 10m Wonder`\n• `.remind tomorrow 9am Rally` ");
+
+            const freshRemind = new Reminder({
+                groupId, setterId, targetTime, text: fullInput
+            });
+            await freshRemind.save();
 
             return replyContext(`✅ *Mars_16 Schedule Lock Registered!* \n⏰ Target (IST): ${moment(targetTime).tz("Asia/Kolkata").format('DD/MM/YYYY hh:mm A')}\n📝 Task: ${fullInput}`);
         } catch (e) {
