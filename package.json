@@ -1,19 +1,16 @@
 {
-  "name": "mars16-cross-platform-engine",
-  "version": "7.5.0",
-  "description": "Mars_16 Universal Multi-Platform WhatsApp Engine with Phone Pairing",
+  "name": "mars16-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Pure WhatsApp Bot optimized for Render Deployment",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
     "whatsapp-web.js": "^1.26.0",
-    "wwebjs-mongo": "^1.1.0",
-    "mongoose": "^8.3.0",
-    "google-translate-api-x": "^10.1.2",
+    "qrcode-terminal": "^0.12.0",
     "moment-timezone": "^0.5.45",
-    "telegraf": "^4.16.3",
-    "qrcode-terminal": "^0.12.0"
+    "@vitalets/google-translate-api": "^9.2.0",
+    "bad-words": "^3.0.4"
   }
 }
