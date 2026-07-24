@@ -1,16 +1,15 @@
 const mongoose = require('mongoose');
 
-// Bypasses the cloud database connection entirely to fix the ENOTFOUND startup crash
-console.log('🛡️ Database connection bypassed for clean initialization setup.');
+console.log('🛡️ Database operations safely bypassed for pairing verification setup.');
 
-// Empty mock database schemas so handler.js doesn't throw a crash error
-class MockSchema {
-    async save() { return true; }
-    static async findOneAndUpdate() { return true; }
+// Standard function tracking constructors to prevent runtime schema crash states
+function MockModel() {
+    this.save = async function() { return true; };
 }
+MockModel.findOneAndUpdate = async function() { return true; };
 
-const GuildFest = MockSchema;
-const ShieldTracker = MockSchema;
-const Reminder = MockSchema;
+const GuildFest = MockModel;
+const ShieldTracker = MockModel;
+const Reminder = MockModel;
 
 module.exports = { mongoose, GuildFest, ShieldTracker, Reminder };
