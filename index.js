@@ -4,16 +4,10 @@ const path = require('path');
 const fs = require('fs');
 const handler = require('./handler');
 
-// ⚠️ CHANGE THIS: Put your bot's phone number with country code (no + or spaces)
 const BOT_PHONE_NUMBER = '919310314801'; 
 
-// Initialize client pointing directly to the stable Docker system path
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './sessions' }),
-    pairWithPhoneNumber: {
-        phoneNumber: BOT_PHONE_NUMBER,
-        showNotification: true
-    },
     puppeteer: {
         headless: true,
         executablePath: '/usr/bin/google-chrome-stable',
@@ -37,7 +31,6 @@ client.on('pairing_code', (code) => {
     console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
 });
 
-// Fallback QR code listener
 client.on('qr', (qr) => {
     console.log('Fallback QR generated.');
 });
@@ -46,27 +39,19 @@ client.on('ready', () => {
     console.log('✅ Mars_16 Bot is successfully synchronized and ready!');
 });
 
-// Automated Welcome Profile Notification Logic using your custom anime banner image
 client.on('group_join', async (notification) => {
     try {
         const chat = await notification.getChat();
         const participantId = notification.recipientIds;
-        
         let welcomeText = `🌟 *WELCOME TO Mars_16* ❤️❤️❤️\n\n✨ Hello @${participantId.split('@')[0]}, welcome to the family!\n\n🤖 Type \`.help\` to see our strategic custom gaming control panels.`;
-
         const mediaPath = path.join(__dirname, 'mars_welcome.jpg');
         const media = MessageMedia.fromFilePath(mediaPath);
-
-        await client.sendMessage(chat.id._serialized, media, { 
-            caption: welcomeText, 
-            mentions: [participantId] 
-        });
+        await client.sendMessage(chat.id._serialized, media, { caption: welcomeText, mentions: [participantId] });
     } catch (e) {
         console.log('Welcome delivery fallback triggered.');
     }
 });
 
-// Route messaging events to handler processing pipeline
 client.on('message', async (msg) => {
     try {
         await handler(client, msg);
@@ -74,5 +59,18 @@ client.on('message', async (msg) => {
         console.error('Core routing breakdown error:', err);
     }
 });
+
+// Delay initialization slightly to let puppeteer stabilize and force pairing link request
+setTimeout(async () => {
+    try {
+        console.log('📡 Requesting secure numeric verification token from WhatsApp...');
+        const pairingCode = await client.requestPairingCode(BOT_PHONE_NUMBER);
+        console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
+        console.log(`🚀 SUCCESS! YOUR CODES FOR LINKING ARE: ${pairingCode}`);
+        console.log('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
+    } catch (err) {
+        console.log('⚠️ Pairing code request error or timeout. Initializing default state...');
+    }
+}, 5000);
 
 client.initialize();
